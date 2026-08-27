@@ -218,18 +218,25 @@
       
       <form onsubmit="handleCreateTournament(event)">
         <div class="form-grid">
+          <!-- Tournament Name -->
+          <input type="text" id="t-name" class="input-field" placeholder="Tournament Name (e.g. Midrand Masters)" required style="grid-column: span 2;">
+          
+          <!-- Date & Time Picker -->
           <input type="datetime-local" id="t-date" class="input-field" required>
+          
+          <!-- Tournament Game Options -->
           <select id="t-game" class="select-field" required>
-            <option value="8 ball">8 Ball</option>
-            <option value="9-ball">9-Ball</option>
-            <option value="Black Ball">Black Ball</option>
-            <option value="ultimate popol">Ultimate Pool</option>
+            <option value="Blackball">Blackball</option>
+            <option value="8 Ball">8 Ball</option>
+            <option value="9 Ball">9 Ball</option>
+            <option value="Heyball">Heyball</option>
+            <option value="Ultimate Pool">Ultimate Pool</option>
           </select>
-          <select id="t-race" class="select-field" required>
-            <option value="Race to 3">Race to 3</option>
-            <option value="Race to 5">Race to 5</option>
-            <option value="Race to 8">Race to 8</option>
-          </select>
+
+          <!-- Editable Integer Race Number -->
+          <input type="number" id="t-race" class="input-field" placeholder="Race To (e.g. 5)" min="1" step="1" required>
+
+          <!-- Tournament Format -->
           <select id="t-format" class="select-field" required>
             <option value="Knockouts">Knockouts</option>
             <option value="Round Robin">Round Robin</option>
