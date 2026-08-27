@@ -4,7 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Basil's Billiards - Tournament Hub</title>
+  
+  <!-- Supabase JS Client library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Load your app logic before DOM renders -->
+  <script src="server.js" defer></script>
+  
   <style>
     :root {
       --bg: #070b12;
@@ -232,6 +237,5 @@
     <div id="tournaments-container"></div>
   </div>
 
-  <script src="server.js"></script>
 </body>
 </html>
