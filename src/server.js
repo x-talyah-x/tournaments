@@ -106,27 +106,44 @@ function renderTournaments() {
 }
 
 // 3. Admin Actions
-async function handleCreateTournament(e) {
-  e.preventDefault();
-  const date = document.getElementById('t-date').value.trim();
-  const game = document.getElementById('t-game').value;
-  const race = document.getElementById('t-race').value;
+async function handleCreateTournament(event) {
+  event.preventDefault();
+
+  const eventDate = document.getElementById('t-date').value; // e.g. "2026-10-28T19:00"
+  const gameType = document.getElementById('t-game').value;
+  const raceTo = document.getElementById('t-race').value;
   const format = document.getElementById('t-format').value;
 
-  if (!date) return;
-
-  const { error } = await supabaseClient
+  const { data, error } = await supabase
     .from('tournaments')
-    .insert([{ date, game, race, format }]);
+    .insert([
+      { event_date: eventDate, game_type: gameType, race_to: raceTo, format: format }
+    ]);
 
   if (error) {
-    console.error("Error creating tournament:", error);
-    alert("Failed to create tournament.");
+    alert('Error publishing tournament: ' + error.message);
   } else {
-    document.getElementById('t-date').value = '';
-    loadTournaments();
+    // Reset form and refresh list
+    event.target.reset();
+    fetchTournaments();
   }
 }
+
+function formatTournamentDate(isoString) {
+  const date = new Date(isoString);
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }).format(date); 
+  // Outputs formatted string like: "Thu, Oct 28, 7:00 PM"
+}
+
+// Example usage in render function:
+// <h4>${formatTournamentDate(tournament.event_date)}</h4>
 
 async function deleteTournament(id) {
   if (confirm("Are you sure you want to delete this tournament and all its entries?")) {
