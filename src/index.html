@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basil's Billiards - Tournament Hub</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #070b12;
+      --card-bg: #0f172a;
+      --text: #f8fafc;
+      --accent: #38bdf8;
+      --gold: #fbbf24;
+      --border: #1e293b;
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: clamp(1rem, 3vw, 2.5rem) 0.75rem;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    .container {
+      position: relative;
+      width: 100%;
+      max-width: 700px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: clamp(1.25rem, 4vw, 2rem);
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
+      border: 1px solid var(--border);
+    }
+
+    .admin-corner-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: #020617;
+      border: 1px solid var(--border);
+      color: #94a3b8;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .admin-corner-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .header {
+      text-align: center;
+      margin-top: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .header h1 {
+      margin: 0.25rem 0;
+      font-size: clamp(1.5rem, 5vw, 2.25rem);
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .header h3 {
+      margin: 0;
+      color: var(--accent);
+      font-size: clamp(0.9rem, 3vw, 1.1rem);
+      text-transform: uppercase;
+    }
+
+    .admin-panel {
+      display: none;
+      background: #020617;
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .admin-panel.visible { display: block; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .tournament-card {
+      background: #020617;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tournament-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .tournament-card h4 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .tournament-badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .badge {
+      background: #1e293b;
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .signup-form {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1.2fr auto;
+      gap: 8px;
+      margin-top: 1rem;
+    }
+
+    .input-field, .select-field {
+      padding: 10px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.9rem;
+      width: 100%;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .btn-primary { background: var(--accent); color: #020617; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-secondary { background: #334155; color: #fff; }
+
+    .table-wrapper { width: 100%; overflow-x: auto; margin-top: 1rem; }
+    .leaderboard { width: 100%; border-collapse: collapse; }
+    .leaderboard th, .leaderboard td { padding: 10px; text-align: left; }
+    .leaderboard th { border-bottom: 2px solid var(--border); color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
+
+    .admin-col { display: none; text-align: right; }
+    .admin-mode-active .admin-col { display: table-cell; }
+
+    @media (max-width: 580px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .signup-form { grid-template-columns: 1fr 1fr; }
+      .signup-form button { grid-column: span 2; }
+    }
+  </style>
+</head>
+<body id="app-body">
+
+  <div class="container">
+    <button id="admin-toggle-btn" class="admin-corner-btn" onclick="toggleAdminPrompt()">
+      <span>🔒</span> <span id="admin-btn-label">Admin Login</span>
+    </button>
+
+    <div class="header">
+      <h1>Basil's Billiards</h1>
+      <h3>Upcoming Tournament Entries</h3>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="admin-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h4 style="color:var(--accent); margin:0;">⚡ Create New Tournament</h4>
+        <button class="btn btn-secondary" onclick="logoutAdmin()">Exit Admin Mode</button>
+      </div>
+      
+      <form onsubmit="handleCreateTournament(event)">
+        <div class="form-grid">
+          <input type="text" id="t-date" class="input-field" placeholder="Date & Day (e.g., Thu 28 Oct, 7 PM)" required>
+          <select id="t-game" class="select-field" required>
+            <option value="8 ball">8 Ball</option>
+            <option value="9-ball">9-Ball</option>
+            <option value="Black Ball">Black Ball</option>
+            <option value="ultimate popol">Ultimate Popol</option>
+          </select>
+          <select id="t-race" class="select-field" required>
+            <option value="Race to 3">Race to 3</option>
+            <option value="Race to 5">Race to 5</option>
+            <option value="Race to 8">Race to 8</option>
+          </select>
+          <select id="t-format" class="select-field" required>
+            <option value="Knockouts">Knockouts</option>
+            <option value="Round Robin">Round Robin</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Publish Tournament</button>
+      </form>
+    </div>
+
+    <!-- Active Tournaments List -->
+    <div id="tournaments-container"></div>
+  </div>
+
+  <script src="server.js"></script>
+</body>
+</html>
