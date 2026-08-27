@@ -279,6 +279,21 @@
       </form>
     </div>
 
+    <!-- Date Filter Control -->
+    <div class="filter-container" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
+      <label for="date-filter" style="font-size: 0.9rem; color: #94a3b8; font-weight: 600;">Filter by Date:</label>
+      <input 
+        type="date" 
+        id="date-filter" 
+        class="input-field" 
+        style="max-width: 200px;" 
+        onchange="renderTournaments()"
+      >
+      <button class="btn btn-secondary" onclick="clearDateFilter()">Clear</button>
+    </div>
+
+<!-- Active Tournaments List -->
+<div id="tournaments-container"></div>
     <!-- Active Tournaments List -->
     <div id="tournaments-container"></div>
   </div>
