@@ -207,7 +207,7 @@
   <div class="container">
     <div class="top-actions">
       <button id="player-profile-btn" class="action-corner-btn" onclick="togglePlayerProfilePanel()">
-        <span>👤</span> <span>Profile</span>
+        <span>👤</span> <span>Create a profile</span>
       </button>
       <button id="admin-toggle-btn" class="action-corner-btn" onclick="toggleAdminPrompt()">
         <span>🔒</span> <span id="admin-btn-label">Admin Login</span>
@@ -228,23 +228,19 @@
       
       <form onsubmit="handleSavePlayerProfile(event)">
         <div class="form-grid">
-          <input type="text" id="p-name" class="input-field" placeholder="Full Name" required>
-          <input type="text" id="p-nickname" class="input-field" placeholder="Nickname / Handle">
-          <input type="email" id="p-email" class="input-field" placeholder="Email Address" required>
-          <input type="tel" id="p-phone" class="input-field" placeholder="Phone Number">
+          <input type="text" id="p-name" class="input-field" placeholder="Full Name" required style="grid-column: span 2;">
           
-          <select id="p-preferred-game" class="select-field">
-            <option value="">Preferred Game</option>
-            <option value="Blackball">Blackball</option>
-            <option value="8 Ball">8 Ball</option>
-            <option value="9 Ball">9 Ball</option>
-            <option value="Heyball">Heyball</option>
-            <option value="Ultimate Pool">Ultimate Pool</option>
+          <select id="p-gender" class="select-field" required>
+            <option value="" disabled selected>Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+            <option value="Prefer not to say">Prefer not to say</option>
           </select>
 
-          <input type="number" id="p-handicap" class="input-field" placeholder="Handicap / Skill Level" min="0" max="10" step="1">
+          <input type="number" id="p-age" class="input-field" placeholder="Age" min="1" max="120" step="1" required>
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;">Save Profile to Database</button>
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Save Profile to Database</button>
       </form>
     </div>
 
