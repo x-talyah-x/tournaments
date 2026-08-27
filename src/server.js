@@ -214,5 +214,5 @@ function escapeHtml(str) {
   }[m]));
 }
 
-// Initialize Application
-loadTournaments();
+// Ensure DOM is ready before loading tournaments
+document.addEventListener('DOMContentLoaded', loadTournaments);
