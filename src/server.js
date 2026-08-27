@@ -330,17 +330,14 @@ async function handleSavePlayerProfile(event) {
   event.preventDefault();
 
   const profileData = {
-    full_name: document.getElementById('p-name').value,
-    nickname: document.getElementById('p-nickname').value,
-    email: document.getElementById('p-email').value,
-    phone: document.getElementById('p-phone').value,
-    preferred_game: document.getElementById('p-preferred-game').value,
-    handicap: document.getElementById('p-handicap').value ? parseInt(document.getElementById('p-handicap').value) : null
+    name: document.getElementById('p-name').value,
+    gender: document.getElementById('p-gender').value,
+    age: parseInt(document.getElementById('p-age').value)
   };
 
   const { data, error } = await supabase
-    .from('players') // Ensure you have a 'players' table in your Supabase DB
-    .upsert([profileData], { onConflict: 'email' });
+    .from('players')
+    .insert([profileData]);
 
   if (error) {
     alert('Error saving profile: ' + error.message);
