@@ -16,7 +16,7 @@ async function loadTournaments() {
     .from('tournaments')
     .select(`
       *,
-      entries (*)
+      registrations (*)
     `)
     .order('created_at', { ascending: false });
 
@@ -30,6 +30,20 @@ async function loadTournaments() {
   renderTournaments();
 }
 
+// Helper to format ISO dates cleanly
+function formatTournamentDate(isoString) {
+  if (!isoString) return 'Date TBD';
+  const date = new Date(isoString);
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }).format(date); 
+}
+
 // 2. Render Tournaments & Participant Tables
 function renderTournaments() {
   const container = document.getElementById('tournaments-container');
@@ -41,21 +55,22 @@ function renderTournaments() {
   }
 
   container.innerHTML = tournamentsData.map(t => {
-    const entries = t.entries || [];
+    const entries = t.registrations || [];
+    const formattedDate = formatTournamentDate(t.event_date);
     
     return `
       <div class="tournament-card">
         <div class="tournament-card-header">
           <div>
-            <h4>${escapeHtml(t.game.toUpperCase())}</h4>
-            <span style="color: var(--accent); font-weight: 600; font-size: 0.9rem;">📅 ${escapeHtml(t.date)}</span>
+            <h4>${escapeHtml((t.game_type || '').toUpperCase())}</h4>
+            <span style="color: var(--accent); font-weight: 600; font-size: 0.9rem;">📅 ${escapeHtml(formattedDate)}</span>
           </div>
           ${isAdmin ? `<button class="btn btn-danger" onclick="deleteTournament('${t.id}')">Delete</button>` : ''}
         </div>
 
         <div class="tournament-badge-row">
-          <span class="badge">Format: ${escapeHtml(t.format)}</span>
-          <span class="badge">${escapeHtml(t.race)}</span>
+          <span class="badge">Format: ${escapeHtml(t.format || '')}</span>
+          <span class="badge">${escapeHtml(t.race_to || '')}</span>
           <span class="badge">Entries: ${entries.length}</span>
         </div>
 
@@ -87,10 +102,10 @@ function renderTournaments() {
                   <tr>
                     <td>${idx + 1}</td>
                     <td>
-                      <strong>${escapeHtml(entry.name)}</strong>
+                      <strong>${escapeHtml(entry.name || '')}</strong>
                       ${entry.nickname ? `<span style="color:#64748b; font-size:0.85rem;"> (${escapeHtml(entry.nickname)})</span>` : ''}
                     </td>
-                    <td><span class="badge" style="background:#020617;">${escapeHtml(entry.category)}</span></td>
+                    <td><span class="badge" style="background:#020617;">${escapeHtml(entry.category || '')}</span></td>
                     <td class="admin-col">
                       <button class="btn btn-danger" onclick="removeParticipant('${entry.id}')">✕</button>
                     </td>
@@ -109,12 +124,12 @@ function renderTournaments() {
 async function handleCreateTournament(event) {
   event.preventDefault();
 
-  const eventDate = document.getElementById('t-date').value; // e.g. "2026-10-28T19:00"
+  const eventDate = document.getElementById('t-date').value;
   const gameType = document.getElementById('t-game').value;
   const raceTo = document.getElementById('t-race').value;
   const format = document.getElementById('t-format').value;
 
-  const { data, error } = await supabase
+  const { error } = await supabaseClient
     .from('tournaments')
     .insert([
       { event_date: eventDate, game_type: gameType, race_to: raceTo, format: format }
@@ -123,27 +138,10 @@ async function handleCreateTournament(event) {
   if (error) {
     alert('Error publishing tournament: ' + error.message);
   } else {
-    // Reset form and refresh list
     event.target.reset();
-    fetchTournaments();
+    loadTournaments();
   }
 }
-
-function formatTournamentDate(isoString) {
-  const date = new Date(isoString);
-  return new Intl.DateTimeFormat('en-US', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  }).format(date); 
-  // Outputs formatted string like: "Thu, Oct 28, 7:00 PM"
-}
-
-// Example usage in render function:
-// <h4>${formatTournamentDate(tournament.event_date)}</h4>
 
 async function deleteTournament(id) {
   if (confirm("Are you sure you want to delete this tournament and all its entries?")) {
@@ -170,12 +168,12 @@ async function handleSignup(e, tournamentId) {
   if (!name) return;
 
   const { error } = await supabaseClient
-    .from('entries')
+    .from('registrations')
     .insert([{ tournament_id: tournamentId, name, nickname, category }]);
 
   if (error) {
     console.error("Error signing up:", error);
-    alert("Failed to add entry.");
+    alert("Failed to add entry: " + error.message);
   } else {
     nameInput.value = '';
     nicknameInput.value = '';
@@ -186,7 +184,7 @@ async function handleSignup(e, tournamentId) {
 async function removeParticipant(entryId) {
   if (confirm("Remove participant?")) {
     const { error } = await supabaseClient
-      .from('entries')
+      .from('registrations')
       .delete()
       .eq('id', entryId);
 
@@ -222,7 +220,8 @@ function logoutAdmin() {
 }
 
 function escapeHtml(str) {
-  return str.replace(/[&<>"']/g, m => ({
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, m => ({
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
