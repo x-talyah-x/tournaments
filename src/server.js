@@ -95,19 +95,49 @@ function getDateCategory(isoString) {
 }
 
 // 2. Render Tournaments & Participant Tables Grouped by Date Category
+// Clear date filter helper
+function clearDateFilter() {
+  const filterInput = document.getElementById('date-filter');
+  if (filterInput) {
+    filterInput.value = '';
+    renderTournaments();
+  }
+}
+
+// Updated renderTournaments function
 function renderTournaments() {
   const container = document.getElementById('tournaments-container');
   if (!container) return;
 
-  if (tournamentsData.length === 0) {
-    container.innerHTML = `<p style="text-align:center; color:#64748b;">No active tournaments scheduled.</p>`;
+  // Retrieve date filter value (format: YYYY-MM-DD)
+  const filterDateVal = document.getElementById('date-filter')?.value;
+
+  // Filter tournaments matching the selected date (if applied)
+  const filteredData = tournamentsData.filter(t => {
+    if (!filterDateVal) return true;
+    if (!t.event_date) return false;
+    
+    // Extract local YYYY-MM-DD string from event_date
+    const eventDateObj = new Date(t.event_date);
+    const year = eventDateObj.getFullYear();
+    const month = String(eventDateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(eventDateObj.getDate()).padStart(2, '0');
+    const eventDateStr = `${year}-${month}-${day}`;
+
+    return eventDateStr === filterDateVal;
+  });
+
+  if (filteredData.length === 0) {
+    container.innerHTML = filterDateVal 
+      ? `<p style="text-align:center; color:#64748b;">No tournaments found for ${filterDateVal}.</p>`
+      : `<p style="text-align:center; color:#64748b;">No active tournaments scheduled.</p>`;
     return;
   }
 
   const categoriesOrder = ['Today', 'Tomorrow', 'Next Week', 'Later', 'Past Events', 'Upcoming'];
   const groupedTournaments = {};
 
-  tournamentsData.forEach(t => {
+  filteredData.forEach(t => {
     const category = getDateCategory(t.event_date);
     if (!groupedTournaments[category]) groupedTournaments[category] = [];
     groupedTournaments[category].push(t);
@@ -115,7 +145,7 @@ function renderTournaments() {
 
   let htmlContent = '';
 
-  // Generate HTML options for profiles dropdown (showing name only)
+  // Generate HTML options for profiles dropdown
   const profileOptionsHtml = availableProfiles.length > 0
     ? availableProfiles.map(p => 
         `<option value="${p.id}">${escapeHtml(p.player_name || 'Unnamed')}</option>`
@@ -361,3 +391,5 @@ async function handleSavePlayerProfile(event) {
     renderTournaments();
   }
 }
+
+
