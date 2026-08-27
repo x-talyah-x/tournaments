@@ -320,29 +320,49 @@ function escapeHtml(str) {
   }[m]));
 }
 
-// Toggle the profile panel UI
+// Toggle Profile Panel Visibility
 function togglePlayerProfilePanel() {
   const panel = document.getElementById('player-panel');
-  panel.classList.toggle('visible');
+  if (panel) {
+    panel.classList.toggle('visible');
+  }
 }
-// Save or update player profile in Supabase
+
+// Save New Player Profile to Supabase
 async function handleSavePlayerProfile(event) {
   event.preventDefault();
 
-  const profileData = {
-    name: document.getElementById('p-name').value,
-    gender: document.getElementById('p-gender').value,
-    age: parseInt(document.getElementById('p-age').value)
-  };
+  const playerName = document.getElementById('p-name').value.trim();
+  const gender = document.getElementById('p-gender').value;
+  const age = parseInt(document.getElementById('p-age').value, 10);
 
-  const { data, error } = await supabase
-    .from('players')
-    .insert([profiles]);
+  if (!playerName || !gender || !age) {
+    alert("Please fill in all profile fields.");
+    return;
+  }
+
+  // Use supabaseClient instead of supabase
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .insert([
+      { 
+        player_name: playerName, 
+        gender: gender, 
+        age: age 
+      }
+    ])
+    .select();
 
   if (error) {
-    alert('Error saving profile: ' + error.message);
+    console.error("Error saving profile:", error);
+    alert("Error saving profile: " + error.message);
   } else {
-    alert('Profile saved successfully!');
+    alert("Profile created successfully!");
+    event.target.reset();
     togglePlayerProfilePanel();
+    
+    // Refresh profiles dropdown list & tournaments UI
+    await fetchProfiles();
+    renderTournaments();
   }
 }
