@@ -337,7 +337,7 @@ async function handleSavePlayerProfile(event) {
 
   const { data, error } = await supabase
     .from('players')
-    .insert([profileData]);
+    .insert([profiles]);
 
   if (error) {
     alert('Error saving profile: ' + error.message);
