@@ -115,10 +115,10 @@ function renderTournaments() {
 
   let htmlContent = '';
 
-  // Generate HTML options for profiles dropdown
+  // Generate HTML options for profiles dropdown (showing name only)
   const profileOptionsHtml = availableProfiles.length > 0
     ? availableProfiles.map(p => 
-        `<option value="${p.id}">${escapeHtml(p.player_name || 'Unnamed')} (${p.age ? p.age + ' yrs' : 'N/A'}, ${escapeHtml(p.gender || 'N/A')})</option>`
+        `<option value="${p.id}">${escapeHtml(p.player_name || 'Unnamed')}</option>`
       ).join('')
     : `<option value="" disabled>No profiles found</option>`;
 
