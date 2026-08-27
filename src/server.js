@@ -7,7 +7,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let tournamentsData = [];
 let isAdmin = false;
 
-// 1. Fetch Tournaments and Entries
+// 1. Fetch Tournaments and Entries (Ordered chronologically by event date)
 async function loadTournaments() {
   const container = document.getElementById('tournaments-container');
   if (!container) return;
@@ -18,7 +18,7 @@ async function loadTournaments() {
       *,
       registrations (*)
     `)
-    .order('created_at', { ascending: false });
+    .order('event_date', { ascending: true }); // Primary sort by event date
 
   if (error) {
     console.error("Error fetching tournaments:", error);
@@ -44,7 +44,28 @@ function formatTournamentDate(isoString) {
   }).format(date); 
 }
 
-// 2. Render Tournaments & Participant Tables
+// Helper to calculate date grouping category (Today, Tomorrow, Next Week, Later, Past)
+function getDateCategory(isoString) {
+  if (!isoString) return 'Upcoming';
+  
+  const now = new Date();
+  const eventDate = new Date(isoString);
+
+  // Normalize to local midnight for accurate calendar day comparison
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+
+  const diffTime = eventDay - today;
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return 'Past Events';
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  if (diffDays > 1 && diffDays <= 7) return 'Next Week';
+  return 'Later';
+}
+
+// 2. Render Tournaments & Participant Tables Grouped by Date Category
 function renderTournaments() {
   const container = document.getElementById('tournaments-container');
   if (!container) return;
@@ -54,72 +75,100 @@ function renderTournaments() {
     return;
   }
 
-  container.innerHTML = tournamentsData.map(t => {
-    const entries = t.registrations || [];
-    const formattedDate = formatTournamentDate(t.event_date);
-    const tournamentName = t.name ? escapeHtml(t.name) : escapeHtml((t.game_type || '').toUpperCase());
-    
-    return `
-      <div class="tournament-card">
-        <div class="tournament-card-header">
-          <div>
-            <h4>${tournamentName}</h4>
-            <span style="color: var(--accent); font-weight: 600; font-size: 0.9rem;">📅 ${escapeHtml(formattedDate)}</span>
-          </div>
-          ${isAdmin ? `<button class="btn btn-danger" onclick="deleteTournament('${t.id}')">Delete</button>` : ''}
+  // Group tournaments into categories while maintaining chronological order
+  const categoriesOrder = ['Today', 'Tomorrow', 'Next Week', 'Later', 'Past Events', 'Upcoming'];
+  const groupedTournaments = {};
+
+  tournamentsData.forEach(t => {
+    const category = getDateCategory(t.event_date);
+    if (!groupedTournaments[category]) groupedTournaments[category] = [];
+    groupedTournaments[category].push(t);
+  });
+
+  let htmlContent = '';
+
+  categoriesOrder.forEach(category => {
+    if (groupedTournaments[category] && groupedTournaments[category].length > 0) {
+      // Add Category Section Header
+      htmlContent += `
+        <div style="margin: 1.5rem 0 0.75rem 0; padding-bottom: 4px; border-bottom: 1px solid var(--border);">
+          <h3 style="color: var(--gold); margin: 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px;">
+            📌 ${category}
+          </h3>
         </div>
+      `;
 
-        <div class="tournament-badge-row">
-          <span class="badge">Game: ${escapeHtml(t.game_type || '')}</span>
-          <span class="badge">Format: ${escapeHtml(t.format || '')}</span>
-          <span class="badge">${escapeHtml(t.race_to || '')}</span>
-          <span class="badge">Entries: ${entries.length}</span>
-        </div>
+      // Render Cards within Category
+      htmlContent += groupedTournaments[category].map(t => {
+        const entries = t.registrations || [];
+        const formattedDate = formatTournamentDate(t.event_date);
+        const tournamentName = t.name ? escapeHtml(t.name) : escapeHtml((t.game_type || '').toUpperCase());
+        
+        return `
+          <div class="tournament-card">
+            <div class="tournament-card-header">
+              <div>
+                <h4>${tournamentName}</h4>
+                <span style="color: var(--accent); font-weight: 600; font-size: 0.9rem;">📅 ${escapeHtml(formattedDate)}</span>
+              </div>
+              ${isAdmin ? `<button class="btn btn-danger" onclick="deleteTournament('${t.id}')">Delete</button>` : ''}
+            </div>
 
-        <!-- Participant Signup Form -->
-        <form class="signup-form" onsubmit="handleSignup(event, '${t.id}')">
-          <input type="text" class="input-field" id="p-name-${t.id}" placeholder="Player Name" required>
-          <input type="text" class="input-field" id="p-nickname-${t.id}" placeholder="Nickname">
-          <select class="select-field" id="p-cat-${t.id}">
-            <option value="Heavyweight">Heavyweight</option>
-            <option value="Lightweight">Lightweight</option>
-          </select>
-          <button type="submit" class="btn btn-primary">Join</button>
-        </form>
+            <div class="tournament-badge-row">
+              <span class="badge">Game: ${escapeHtml(t.game_type || '')}</span>
+              <span class="badge">Format: ${escapeHtml(t.format || '')}</span>
+              <span class="badge">${escapeHtml(t.race_to || '')}</span>
+              <span class="badge">Entries: ${entries.length}</span>
+            </div>
 
-        <!-- Player Entry List -->
-        ${entries.length > 0 ? `
-          <div class="table-wrapper">
-            <table class="leaderboard">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Player</th>
-                  <th>Category</th>
-                  <th class="admin-col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${entries.map((entry, idx) => `
-                  <tr>
-                    <td>${idx + 1}</td>
-                    <td>
-                      <strong>${escapeHtml(entry.name || '')}</strong>
-                      ${entry.nickname ? `<span style="color:#64748b; font-size:0.85rem;"> (${escapeHtml(entry.nickname)})</span>` : ''}
-                    </td>
-                    <td><span class="badge" style="background:#020617;">${escapeHtml(entry.category || '')}</span></td>
-                    <td class="admin-col">
-                      <button class="btn btn-danger" onclick="removeParticipant('${entry.id}')">✕</button>
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
+            <!-- Participant Signup Form -->
+            <form class="signup-form" onsubmit="handleSignup(event, '${t.id}')">
+              <input type="text" class="input-field" id="p-name-${t.id}" placeholder="Player Name" required>
+              <input type="text" class="input-field" id="p-nickname-${t.id}" placeholder="Nickname">
+              <select class="select-field" id="p-cat-${t.id}">
+                <option value="Heavyweight">Heavyweight</option>
+                <option value="Lightweight">Lightweight</option>
+              </select>
+              <button type="submit" class="btn btn-primary">Join</button>
+            </form>
+
+            <!-- Player Entry List -->
+            ${entries.length > 0 ? `
+              <div class="table-wrapper">
+                <table class="leaderboard">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Player</th>
+                      <th>Category</th>
+                      <th class="admin-col">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${entries.map((entry, idx) => `
+                      <tr>
+                        <td>${idx + 1}</td>
+                        <td>
+                          <strong>${escapeHtml(entry.name || '')}</strong>
+                          ${entry.nickname ? `<span style="color:#64748b; font-size:0.85rem;"> (${escapeHtml(entry.nickname)})</span>` : ''}
+                        </td>
+                        <td><span class="badge" style="background:#020617;">${escapeHtml(entry.category || '')}</span></td>
+                        <td class="admin-col">
+                          <button class="btn btn-danger" onclick="removeParticipant('${entry.id}')">✕</button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            ` : `<p style="font-size: 0.85rem; color: #64748b; margin-top: 1rem;">No entries yet. Be the first to register!</p>`}
           </div>
-        ` : `<p style="font-size: 0.85rem; color: #64748b; margin-top: 1rem;">No entries yet. Be the first to register!</p>`}
-      </div>
-    `;
-  }).join('');
+        `;
+      }).join('');
+    }
+  });
+
+  container.innerHTML = htmlContent;
 }
 
 // 3. Admin Actions
