@@ -96,6 +96,7 @@ function getDateCategory(isoString) {
 
 // 2. Render Tournaments & Participant Tables Grouped by Date Category
 // Clear date filter helper
+// Clear date filter helper
 function clearDateFilter() {
   const filterInput = document.getElementById('date-filter');
   if (filterInput) {
@@ -104,32 +105,55 @@ function clearDateFilter() {
   }
 }
 
-// Updated renderTournaments function
+// Updated renderTournaments function with period-based filtering
 function renderTournaments() {
   const container = document.getElementById('tournaments-container');
   if (!container) return;
 
-  // Retrieve date filter value (format: YYYY-MM-DD)
-  const filterDateVal = document.getElementById('date-filter')?.value;
+  const filterPeriod = document.getElementById('date-filter')?.value;
 
-  // Filter tournaments matching the selected date (if applied)
+  // Filter tournaments matching the selected timeframe
   const filteredData = tournamentsData.filter(t => {
-    if (!filterDateVal) return true;
+    if (!filterPeriod) return true;
     if (!t.event_date) return false;
-    
-    // Extract local YYYY-MM-DD string from event_date
-    const eventDateObj = new Date(t.event_date);
-    const year = eventDateObj.getFullYear();
-    const month = String(eventDateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(eventDateObj.getDate()).padStart(2, '0');
-    const eventDateStr = `${year}-${month}-${day}`;
 
-    return eventDateStr === filterDateVal;
+    const now = new Date();
+    const eventDate = new Date(t.event_date);
+
+    // Normalize dates to start of day for accurate comparisons
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+
+    const diffDays = Math.round((eventDay - today) / (1000 * 60 * 60 * 24));
+
+    if (filterPeriod === 'today') {
+      return diffDays === 0;
+    }
+
+    if (filterPeriod === 'tomorrow') {
+      return diffDays === 1;
+    }
+
+    if (filterPeriod === 'this_week') {
+      // Days remaining in current calendar week (Sunday - Saturday)
+      const daysUntilEndOfWeek = 6 - today.getDay();
+      return diffDays >= 0 && diffDays <= daysUntilEndOfWeek;
+    }
+
+    if (filterPeriod === 'this_month') {
+      return (
+        eventDay >= today &&
+        eventDate.getMonth() === now.getMonth() &&
+        eventDate.getFullYear() === now.getFullYear()
+      );
+    }
+
+    return true;
   });
 
   if (filteredData.length === 0) {
-    container.innerHTML = filterDateVal 
-      ? `<p style="text-align:center; color:#64748b;">No tournaments found for ${filterDateVal}.</p>`
+    container.innerHTML = filterPeriod 
+      ? `<p style="text-align:center; color:#64748b;">No tournaments found for this timeframe.</p>`
       : `<p style="text-align:center; color:#64748b;">No active tournaments scheduled.</p>`;
     return;
   }
@@ -145,7 +169,6 @@ function renderTournaments() {
 
   let htmlContent = '';
 
-  // Generate HTML options for profiles dropdown
   const profileOptionsHtml = availableProfiles.length > 0
     ? availableProfiles.map(p => 
         `<option value="${p.id}">${escapeHtml(p.player_name || 'Unnamed')}</option>`
@@ -227,7 +250,6 @@ function renderTournaments() {
 
   container.innerHTML = htmlContent;
 }
-
 // 3. Admin Actions
 async function handleCreateTournament(event) {
   event.preventDefault();
