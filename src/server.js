@@ -319,3 +319,33 @@ function escapeHtml(str) {
     "'": '&#39;'
   }[m]));
 }
+
+// Toggle the profile panel UI
+function togglePlayerProfilePanel() {
+  const panel = document.getElementById('player-panel');
+  panel.classList.toggle('visible');
+}
+// Save or update player profile in Supabase
+async function handleSavePlayerProfile(event) {
+  event.preventDefault();
+
+  const profileData = {
+    full_name: document.getElementById('p-name').value,
+    nickname: document.getElementById('p-nickname').value,
+    email: document.getElementById('p-email').value,
+    phone: document.getElementById('p-phone').value,
+    preferred_game: document.getElementById('p-preferred-game').value,
+    handicap: document.getElementById('p-handicap').value ? parseInt(document.getElementById('p-handicap').value) : null
+  };
+
+  const { data, error } = await supabase
+    .from('players') // Ensure you have a 'players' table in your Supabase DB
+    .upsert([profileData], { onConflict: 'email' });
+
+  if (error) {
+    alert('Error saving profile: ' + error.message);
+  } else {
+    alert('Profile saved successfully!');
+    togglePlayerProfilePanel();
+  }
+}
