@@ -169,8 +169,6 @@ function renderTournaments() {
                     <tr>
                       <th>#</th>
                       <th>Player</th>
-                      <th>Age</th>
-                      <th>Gender</th>
                       <th class="admin-col">Actions</th>
                     </tr>
                   </thead>
@@ -181,8 +179,6 @@ function renderTournaments() {
                         <tr>
                           <td>${idx + 1}</td>
                           <td><strong>${escapeHtml(profile.player_name || 'Unknown')}</strong></td>
-                          <td>${escapeHtml(profile.age ? String(profile.age) : '-')}</td>
-                          <td><span class="badge" style="background:#020617;">${escapeHtml(profile.gender || '-')}</span></td>
                           <td class="admin-col">
                             <button class="btn btn-danger" onclick="removeParticipant('${entry.id}')">✕</button>
                           </td>
