@@ -57,18 +57,20 @@ function renderTournaments() {
   container.innerHTML = tournamentsData.map(t => {
     const entries = t.registrations || [];
     const formattedDate = formatTournamentDate(t.event_date);
+    const tournamentName = t.name ? escapeHtml(t.name) : escapeHtml((t.game_type || '').toUpperCase());
     
     return `
       <div class="tournament-card">
         <div class="tournament-card-header">
           <div>
-            <h4>${escapeHtml((t.game_type || '').toUpperCase())}</h4>
+            <h4>${tournamentName}</h4>
             <span style="color: var(--accent); font-weight: 600; font-size: 0.9rem;">📅 ${escapeHtml(formattedDate)}</span>
           </div>
           ${isAdmin ? `<button class="btn btn-danger" onclick="deleteTournament('${t.id}')">Delete</button>` : ''}
         </div>
 
         <div class="tournament-badge-row">
+          <span class="badge">Game: ${escapeHtml(t.game_type || '')}</span>
           <span class="badge">Format: ${escapeHtml(t.format || '')}</span>
           <span class="badge">${escapeHtml(t.race_to || '')}</span>
           <span class="badge">Entries: ${entries.length}</span>
@@ -124,15 +126,24 @@ function renderTournaments() {
 async function handleCreateTournament(event) {
   event.preventDefault();
 
+  const name = document.getElementById('t-name').value.trim();
   const eventDate = document.getElementById('t-date').value;
   const gameType = document.getElementById('t-game').value;
-  const raceTo = document.getElementById('t-race').value;
+  const raceNumber = parseInt(document.getElementById('t-race').value, 10);
   const format = document.getElementById('t-format').value;
+
+  const raceToText = `Race to ${raceNumber}`;
 
   const { error } = await supabaseClient
     .from('tournaments')
     .insert([
-      { event_date: eventDate, game_type: gameType, race_to: raceTo, format: format }
+      { 
+        name: name,
+        event_date: eventDate, 
+        game_type: gameType, 
+        race_to: raceToText, 
+        format: format 
+      }
     ]);
 
   if (error) {
