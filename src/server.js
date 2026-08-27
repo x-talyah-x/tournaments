@@ -260,7 +260,7 @@ async function handleSignup(e, tournamentId) {
     .from('registrations')
     .insert([{ 
       tournament_id: tournamentId, 
-      player_id: playerId 
+      profile_id: playerId 
     }]);
 
   if (error) {
