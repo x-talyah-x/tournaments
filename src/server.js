@@ -341,7 +341,6 @@ async function handleSavePlayerProfile(event) {
     return;
   }
 
-  // Use supabaseClient instead of supabase
   const { data, error } = await supabaseClient
     .from('profiles')
     .insert([
