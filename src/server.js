@@ -291,12 +291,17 @@ async function handleSignup(e, tournamentId) {
 
   if (error) {
     console.error("Error signing up:", error);
-    alert("Failed to add entry: " + error.message);
+    
+    // Code 23505 or duplicate key violation message check
+    if (error.code === '23505' || error.message.includes('unique constraint')) {
+      alert("User already registered for this tournament.");
+    } else {
+      alert("Failed to add entry: " + error.message);
+    }
   } else {
     await loadTournaments();
   }
 }
-
 async function removeParticipant(entryId) {
   if (confirm("Remove participant?")) {
     const { error } = await supabaseClient
