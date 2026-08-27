@@ -162,6 +162,12 @@
       width: 100%;
     }
 
+    /* Style for native picker icon color inside dark input */
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
+
     .btn {
       padding: 10px 14px;
       border: none;
@@ -212,7 +218,7 @@
       
       <form onsubmit="handleCreateTournament(event)">
         <div class="form-grid">
-          <input type="text" id="t-date" class="input-field" placeholder="Date & Day (e.g., Thu 28 Oct, 7 PM)" required>
+          <input type="datetime-local" id="t-date" class="input-field" required>
           <select id="t-game" class="select-field" required>
             <option value="8 ball">8 Ball</option>
             <option value="9-ball">9-Ball</option>
