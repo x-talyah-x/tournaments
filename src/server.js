@@ -385,7 +385,13 @@ async function handleSavePlayerProfile(event) {
 
   if (error) {
     console.error("Error saving profile:", error);
-    alert("Error saving profile: " + error.message);
+    
+    // Check for unique constraint violation (PostgreSQL code 23505)
+    if (error.code === '23505' || error.message.includes('unique constraint')) {
+      alert("user already exists");
+    } else {
+      alert("Error saving profile: " + error.message);
+    }
   } else {
     alert("Profile created successfully!");
     event.target.reset();
