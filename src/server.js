@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function fetchProfiles() {
   const { data, error } = await supabaseClient
     .from('profiles')
-    .select('id, player_name, age, gender')
+    .select('id, player_name')
     .order('player_name', { ascending: true });
 
   if (error) {
