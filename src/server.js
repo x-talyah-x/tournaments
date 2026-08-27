@@ -1,28 +1,20 @@
 // Supabase Configuration
 const SUPABASE_URL = "https://fetpncdjrmfknofvekqc.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldHBuY2Rqcm1ma25vZnZla3FjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDE3NDEsImV4cCI6MjEwMjM3Nzc0MX0.oiKiVJ8u18g0G4XOmjcBaDGdezRwVuMqmVRI3e80V0E"; 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let tournamentsData = [];
 let availableProfiles = [];
+let isAdmin = false;
 
-// Helper function to safely render text
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-// Initial Load
+// Initialize app data on load
 document.addEventListener('DOMContentLoaded', async () => {
   await fetchProfiles();
   await loadTournaments();
 });
 
-// Fetch Profiles from the profiles table
+// Fetch all profiles to populate registration dropdowns
 async function fetchProfiles() {
   const { data, error } = await supabaseClient
     .from('profiles')
@@ -30,15 +22,18 @@ async function fetchProfiles() {
     .order('player_name', { ascending: true });
 
   if (error) {
-    console.error('Error fetching profiles:', error);
+    console.error("Error fetching profiles:", error);
   } else {
     availableProfiles = data || [];
   }
 }
 
-// Fetch Tournaments joined with Registrations and Profiles
+// 1. Fetch Tournaments, Entries, and Joined Profiles
 async function loadTournaments() {
-  const { data: tournaments, error } = await supabaseClient
+  const container = document.getElementById('tournaments-container');
+  if (!container) return;
+
+  const { data, error } = await supabaseClient
     .from('tournaments')
     .select(`
       *,
@@ -53,97 +48,211 @@ async function loadTournaments() {
         )
       )
     `)
-    .order('created_at', { ascending: false });
+    .order('event_date', { ascending: true });
 
   if (error) {
-    console.error('Error loading tournaments:', error);
+    console.error("Error fetching tournaments:", error);
+    container.innerHTML = `<p style="text-align:center; color:var(--danger);">Failed to load tournaments.</p>`;
     return;
   }
 
-  renderTournaments(tournaments || []);
+  tournamentsData = data || [];
+  renderTournaments();
 }
 
-// Render Tournaments and Entries
-function renderTournaments(tournaments) {
-  const container = document.getElementById('tournaments-list');
+// Helper to format ISO dates cleanly
+function formatTournamentDate(isoString) {
+  if (!isoString) return 'Date TBD';
+  const date = new Date(isoString);
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }).format(date); 
+}
+
+// Helper to calculate date grouping category
+function getDateCategory(isoString) {
+  if (!isoString) return 'Upcoming';
+  
+  const now = new Date();
+  const eventDate = new Date(isoString);
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+
+  const diffTime = eventDay - today;
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return 'Past Events';
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  if (diffDays > 1 && diffDays <= 7) return 'Next Week';
+  return 'Later';
+}
+
+// 2. Render Tournaments & Participant Tables Grouped by Date Category
+function renderTournaments() {
+  const container = document.getElementById('tournaments-container');
   if (!container) return;
 
-  if (tournaments.length === 0) {
-    container.innerHTML = `<p>No tournaments scheduled.</p>`;
+  if (tournamentsData.length === 0) {
+    container.innerHTML = `<p style="text-align:center; color:#64748b;">No active tournaments scheduled.</p>`;
     return;
   }
 
-  container.innerHTML = tournaments.map(t => {
-    const entries = t.registrations || [];
+  const categoriesOrder = ['Today', 'Tomorrow', 'Next Week', 'Later', 'Past Events', 'Upcoming'];
+  const groupedTournaments = {};
 
-    // Profile Dropdown Options
-    const profileOptions = availableProfiles.map(p => 
-      `<option value="${p.id}">${escapeHtml(p.player_name)} (${p.age || '-'}, ${p.gender || '-'})</option>`
-    ).join('');
+  tournamentsData.forEach(t => {
+    const category = getDateCategory(t.event_date);
+    if (!groupedTournaments[category]) groupedTournaments[category] = [];
+    groupedTournaments[category].push(t);
+  });
 
-    return `
-      <div class="tournament-card" style="border: 1px solid #334155; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px;">
-        <h2>${escapeHtml(t.name || 'Untitled Tournament')}</h2>
-        <p style="color: #94a3b8; font-size: 0.9rem;">${escapeHtml(t.game_type || '')} | ${escapeHtml(t.format || '')}</p>
+  let htmlContent = '';
 
-        <!-- Player Registration Form -->
-        <form class="signup-form" onsubmit="handleSignup(event, '${t.id}')">
-          <select class="select-field" id="p-select-${t.id}" required>
-            <option value="" disabled selected>Select Player Profile...</option>
-            ${profileOptions}
-          </select>
-          <button type="submit" class="btn btn-primary">Join Tournament</button>
-        </form>
+  // Generate HTML options for profiles dropdown
+  const profileOptionsHtml = availableProfiles.length > 0
+    ? availableProfiles.map(p => 
+        `<option value="${p.id}">${escapeHtml(p.player_name || 'Unnamed')} (${p.age ? p.age + ' yrs' : 'N/A'}, ${escapeHtml(p.gender || 'N/A')})</option>`
+      ).join('')
+    : `<option value="" disabled>No profiles found</option>`;
 
-        <!-- Participant List -->
-        ${entries.length > 0 ? `
-          <div class="table-wrapper">
-            <table class="leaderboard">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Player</th>
-                  <th>Age</th>
-                  <th>Gender</th>
-                  <th class="admin-col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${entries.map((entry, idx) => {
-                  const profile = entry.profiles || {};
-                  return `
+  categoriesOrder.forEach(category => {
+    if (groupedTournaments[category] && groupedTournaments[category].length > 0) {
+      htmlContent += `
+        <div style="margin: 1.5rem 0 0.75rem 0; padding-bottom: 4px; border-bottom: 1px solid var(--border);">
+          <h3 style="color: var(--gold); margin: 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px;">
+            📌 ${category}
+          </h3>
+        </div>
+      `;
+
+      htmlContent += groupedTournaments[category].map(t => {
+        const entries = t.registrations || [];
+        const formattedDate = formatTournamentDate(t.event_date);
+        const tournamentName = t.name ? escapeHtml(t.name) : escapeHtml((t.game_type || '').toUpperCase());
+        
+        return `
+          <div class="tournament-card">
+            <div class="tournament-card-header">
+              <div>
+                <h4>${tournamentName}</h4>
+                <span style="color: var(--accent); font-weight: 600; font-size: 0.9rem;">📅 ${escapeHtml(formattedDate)}</span>
+              </div>
+              ${isAdmin ? `<button class="btn btn-danger" onclick="deleteTournament('${t.id}')">Delete</button>` : ''}
+            </div>
+
+            <div class="tournament-badge-row">
+              <span class="badge">Game: ${escapeHtml(t.game_type || '')}</span>
+              <span class="badge">Format: ${escapeHtml(t.format || '')}</span>
+              <span class="badge">${escapeHtml(t.race_to || '')}</span>
+              <span class="badge">Entries: ${entries.length}</span>
+            </div>
+
+            <form class="signup-form" onsubmit="handleSignup(event, '${t.id}')" style="display: flex; gap: 8px; margin-top: 1rem;">
+              <select class="select-field" id="p-select-${t.id}" required style="flex: 1;">
+                <option value="" disabled selected>Select Player Profile...</option>
+                ${profileOptionsHtml}
+              </select>
+              <button type="submit" class="btn btn-primary">Join</button>
+            </form>
+
+            ${entries.length > 0 ? `
+              <div class="table-wrapper">
+                <table class="leaderboard">
+                  <thead>
                     <tr>
-                      <td>${idx + 1}</td>
-                      <td><strong>${escapeHtml(profile.player_name || 'Unknown')}</strong></td>
-                      <td>${escapeHtml(profile.age ? String(profile.age) : '-')}</td>
-                      <td>
-                        <span class="badge" style="background:#1e293b; color:#38bdf8;">
-                          ${escapeHtml(profile.gender || '-')}
-                        </span>
-                      </td>
-                      <td class="admin-col">
-                        <button class="btn btn-danger" onclick="removeParticipant('${entry.id}')">✕</button>
-                      </td>
+                      <th>#</th>
+                      <th>Player</th>
+                      <th>Age</th>
+                      <th>Gender</th>
+                      <th class="admin-col">Actions</th>
                     </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    ${entries.map((entry, idx) => {
+                      const profile = entry.profiles || {};
+                      return `
+                        <tr>
+                          <td>${idx + 1}</td>
+                          <td><strong>${escapeHtml(profile.player_name || 'Unknown')}</strong></td>
+                          <td>${escapeHtml(profile.age ? String(profile.age) : '-')}</td>
+                          <td><span class="badge" style="background:#020617;">${escapeHtml(profile.gender || '-')}</span></td>
+                          <td class="admin-col">
+                            <button class="btn btn-danger" onclick="removeParticipant('${entry.id}')">✕</button>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            ` : `<p style="font-size: 0.85rem; color: #64748b; margin-top: 1rem;">No entries yet. Be the first to register!</p>`}
           </div>
-        ` : `<p style="font-size: 0.85rem; color: #64748b; margin-top: 1rem;">No entries yet. Select a player profile to register!</p>`}
-      </div>
-    `;
-  }).join('');
+        `;
+      }).join('');
+    }
+  });
+
+  container.innerHTML = htmlContent;
 }
 
-// Handle Registering a Player Profile to a Tournament
+// 3. Admin Actions
+async function handleCreateTournament(event) {
+  event.preventDefault();
+
+  const name = document.getElementById('t-name').value.trim();
+  const eventDate = document.getElementById('t-date').value;
+  const gameType = document.getElementById('t-game').value;
+  const raceNumber = parseInt(document.getElementById('t-race').value, 10);
+  const format = document.getElementById('t-format').value;
+
+  const raceToText = `Race to ${raceNumber}`;
+
+  const { error } = await supabaseClient
+    .from('tournaments')
+    .insert([
+      { 
+        name: name,
+        event_date: eventDate, 
+        game_type: gameType, 
+        race_to: raceToText, 
+        format: format 
+      }
+    ]);
+
+  if (error) {
+    alert('Error publishing tournament: ' + error.message);
+  } else {
+    event.target.reset();
+    await loadTournaments();
+  }
+}
+
+async function deleteTournament(id) {
+  if (confirm("Are you sure you want to delete this tournament and all its entries?")) {
+    const { error } = await supabaseClient
+      .from('tournaments')
+      .delete()
+      .eq('id', id);
+
+    if (!error) await loadTournaments();
+  }
+}
+
+// 4. Participant Actions (Registers selected profile)
 async function handleSignup(e, tournamentId) {
   e.preventDefault();
   const selectElement = document.getElementById(`p-select-${tournamentId}`);
   const playerId = selectElement ? selectElement.value : null;
 
   if (!playerId) {
-    alert("Please select a player profile.");
+    alert("Please select a valid player profile.");
     return;
   }
 
@@ -156,25 +265,57 @@ async function handleSignup(e, tournamentId) {
 
   if (error) {
     console.error("Error signing up:", error);
-    alert("Failed to register player: " + error.message);
+    alert("Failed to add entry: " + error.message);
   } else {
     await loadTournaments();
   }
 }
 
-// Remove Participant from Tournament
-async function removeParticipant(registrationId) {
-  if (!confirm("Are you sure you want to remove this player?")) return;
+async function removeParticipant(entryId) {
+  if (confirm("Remove participant?")) {
+    const { error } = await supabaseClient
+      .from('registrations')
+      .delete()
+      .eq('id', entryId);
 
-  const { error } = await supabaseClient
-    .from('registrations')
-    .delete()
-    .eq('id', registrationId);
-
-  if (error) {
-    console.error("Error removing participant:", error);
-    alert("Failed to remove participant.");
-  } else {
-    await loadTournaments();
+    if (!error) await loadTournaments();
   }
+}
+
+// 5. Admin Authentication UI Toggle
+function toggleAdminPrompt() {
+  if (isAdmin) { 
+    logoutAdmin(); 
+    return; 
+  }
+  
+  const inputPass = prompt("Admin Password:");
+  if (inputPass) {
+    isAdmin = true;
+    document.getElementById('app-body')?.classList.add('admin-mode-active');
+    document.getElementById('admin-panel')?.classList.add('visible');
+    const label = document.getElementById('admin-btn-label');
+    if (label) label.innerText = 'Exit Edit Mode';
+    renderTournaments();
+  }
+}
+
+function logoutAdmin() {
+  isAdmin = false;
+  document.getElementById('app-body')?.classList.remove('admin-mode-active');
+  document.getElementById('admin-panel')?.classList.remove('visible');
+  const label = document.getElementById('admin-btn-label');
+  if (label) label.innerText = 'Admin Login';
+  renderTournaments();
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[m]));
 }
