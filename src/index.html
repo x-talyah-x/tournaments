@@ -46,10 +46,15 @@
       border: 1px solid var(--border);
     }
 
-    .admin-corner-btn {
+    .top-actions {
       position: absolute;
       top: 1rem;
       right: 1rem;
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-corner-btn {
       background: #020617;
       border: 1px solid var(--border);
       color: #94a3b8;
@@ -64,7 +69,7 @@
       transition: all 0.2s ease;
     }
 
-    .admin-corner-btn:hover {
+    .action-corner-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
     }
@@ -90,7 +95,7 @@
       text-transform: uppercase;
     }
 
-    .admin-panel {
+    .admin-panel, .player-panel {
       display: none;
       background: #020617;
       border: 1px solid var(--accent);
@@ -99,7 +104,7 @@
       margin-bottom: 1.5rem;
     }
 
-    .admin-panel.visible { display: block; }
+    .admin-panel.visible, .player-panel.visible { display: block; }
 
     .form-grid {
       display: grid;
@@ -200,13 +205,47 @@
 <body id="app-body">
 
   <div class="container">
-    <button id="admin-toggle-btn" class="admin-corner-btn" onclick="toggleAdminPrompt()">
-      <span>🔒</span> <span id="admin-btn-label">Admin Login</span>
-    </button>
+    <div class="top-actions">
+      <button id="player-profile-btn" class="action-corner-btn" onclick="togglePlayerProfilePanel()">
+        <span>👤</span> <span>Profile</span>
+      </button>
+      <button id="admin-toggle-btn" class="action-corner-btn" onclick="toggleAdminPrompt()">
+        <span>🔒</span> <span id="admin-btn-label">Admin Login</span>
+      </button>
+    </div>
 
     <div class="header">
       <h1>Basil's Billiards</h1>
       <h3>Upcoming Tournament Entries</h3>
+    </div>
+
+    <!-- Player Profile Panel -->
+    <div id="player-panel" class="player-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h4 style="color:var(--accent); margin:0;">👤 Player Profile Setup</h4>
+        <button class="btn btn-secondary" onclick="togglePlayerProfilePanel()">Close</button>
+      </div>
+      
+      <form onsubmit="handleSavePlayerProfile(event)">
+        <div class="form-grid">
+          <input type="text" id="p-name" class="input-field" placeholder="Full Name" required>
+          <input type="text" id="p-nickname" class="input-field" placeholder="Nickname / Handle">
+          <input type="email" id="p-email" class="input-field" placeholder="Email Address" required>
+          <input type="tel" id="p-phone" class="input-field" placeholder="Phone Number">
+          
+          <select id="p-preferred-game" class="select-field">
+            <option value="">Preferred Game</option>
+            <option value="Blackball">Blackball</option>
+            <option value="8 Ball">8 Ball</option>
+            <option value="9 Ball">9 Ball</option>
+            <option value="Heyball">Heyball</option>
+            <option value="Ultimate Pool">Ultimate Pool</option>
+          </select>
+
+          <input type="number" id="p-handicap" class="input-field" placeholder="Handicap / Skill Level" min="0" max="10" step="1">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Save Profile to Database</button>
+      </form>
     </div>
 
     <!-- Admin Panel -->
