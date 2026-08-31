@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function fetchProfiles() {
   const { data, error } = await supabaseClient
     .from('profiles')
-    .select('id, player_name')
+    .select('id, player_name, gender')
     .order('player_name', { ascending: true });
 
   if (error) {
@@ -119,27 +119,16 @@ function renderTournaments() {
 
     const now = new Date();
     const eventDate = new Date(t.event_date);
-
-    // Normalize dates to start of day for accurate comparisons
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
-
     const diffDays = Math.round((eventDay - today) / (1000 * 60 * 60 * 24));
 
-    if (filterPeriod === 'today') {
-      return diffDays === 0;
-    }
-
-    if (filterPeriod === 'tomorrow') {
-      return diffDays === 1;
-    }
-
+    if (filterPeriod === 'today') return diffDays === 0;
+    if (filterPeriod === 'tomorrow') return diffDays === 1;
     if (filterPeriod === 'this_week') {
-      // Days remaining in current calendar week (Sunday - Saturday)
       const daysUntilEndOfWeek = 6 - today.getDay();
       return diffDays >= 0 && diffDays <= daysUntilEndOfWeek;
     }
-
     if (filterPeriod === 'this_month') {
       return (
         eventDay >= today &&
@@ -147,7 +136,6 @@ function renderTournaments() {
         eventDate.getFullYear() === now.getFullYear()
       );
     }
-
     return true;
   });
 
@@ -169,12 +157,6 @@ function renderTournaments() {
 
   let htmlContent = '';
 
-  const profileOptionsHtml = availableProfiles.length > 0
-    ? availableProfiles.map(p => 
-        `<option value="${p.id}">${escapeHtml(p.player_name || 'Unnamed')}</option>`
-      ).join('')
-    : `<option value="" disabled>No profiles found</option>`;
-
   categoriesOrder.forEach(category => {
     if (groupedTournaments[category] && groupedTournaments[category].length > 0) {
       htmlContent += `
@@ -189,7 +171,22 @@ function renderTournaments() {
         const entries = t.registrations || [];
         const formattedDate = formatTournamentDate(t.event_date);
         const tournamentName = t.name ? escapeHtml(t.name) : escapeHtml((t.game_type || '').toUpperCase());
-        
+        const targetGender = t.target_gender || 'All';
+
+        // Filter profiles for this specific tournament's gender restrictions
+        const eligibleProfiles = availableProfiles.filter(p => {
+          if (targetGender === 'All') return true;
+          return p.gender === targetGender;
+        });
+
+        const profileOptionsHtml = eligibleProfiles.length > 0
+          ? eligibleProfiles.map(p => 
+              `<option value="${p.id}">${escapeHtml(p.player_name || 'Unnamed')}</option>`
+            ).join('')
+          : `<option value="" disabled>No eligible profiles found</option>`;
+
+        const genderBadgeText = targetGender === 'All' ? 'Open' : `${targetGender} Only`;
+
         return `
           <div class="tournament-card">
             <div class="tournament-card-header">
@@ -201,6 +198,7 @@ function renderTournaments() {
             </div>
 
             <div class="tournament-badge-row">
+              <span class="badge" style="background: var(--gold); color: #000;">Division: ${escapeHtml(genderBadgeText)}</span>
               <span class="badge">Game: ${escapeHtml(t.game_type || '')}</span>
               <span class="badge">Format: ${escapeHtml(t.format || '')}</span>
               <span class="badge">${escapeHtml(t.race_to || '')}</span>
@@ -259,6 +257,7 @@ async function handleCreateTournament(event) {
   const gameType = document.getElementById('t-game').value;
   const raceNumber = parseInt(document.getElementById('t-race').value, 10);
   const format = document.getElementById('t-format').value;
+  const targetGender = document.getElementById('t-target-gender').value;
 
   const raceToText = `Race to ${raceNumber}`;
 
@@ -270,7 +269,8 @@ async function handleCreateTournament(event) {
         event_date: eventDate, 
         game_type: gameType, 
         race_to: raceToText, 
-        format: format 
+        format: format,
+        target_gender: targetGender
       }
     ]);
 
