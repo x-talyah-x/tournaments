@@ -7,7 +7,7 @@
   
   <!-- Supabase JS Client library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Load your app logic before DOM renders -->
+  <!-- Load your app logic -->
   <script src="server.js" defer></script>
   
   <style>
@@ -167,7 +167,6 @@
       width: 100%;
     }
 
-    /* Style for native picker icon color inside dark input */
     input[type="datetime-local"]::-webkit-calendar-picker-indicator {
       filter: invert(1);
       cursor: pointer;
@@ -195,6 +194,13 @@
     .admin-col { display: none; text-align: right; }
     .admin-mode-active .admin-col { display: table-cell; }
 
+    .filter-container {
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     @media (max-width: 580px) {
       .form-grid { grid-template-columns: 1fr; }
       .signup-form { grid-template-columns: 1fr 1fr; }
@@ -220,115 +226,103 @@
     </div>
 
     <!-- Player Profile Panel -->
-   <!-- Player Auth & Profile Panel -->
-<div id="player-panel" class="player-panel">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    <h4 style="color:var(--accent); margin:0;">👤 Account Setup</h4>
-    <button class="btn btn-secondary" onclick="togglePlayerProfilePanel()">Close</button>
-  </div>
+    <div id="player-panel" class="player-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h4 style="color:var(--accent); margin:0;">👤 Account Setup</h4>
+        <button class="btn btn-secondary" onclick="togglePlayerProfilePanel()">Close</button>
+      </div>
 
-  <!-- Auth Mode Switcher -->
-  <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
-    <button type="button" id="tab-signup-btn" class="btn btn-primary" style="flex: 1;" onclick="switchAuthTab('signup')">Sign Up</button>
-    <button type="button" id="tab-login-btn" class="btn btn-secondary" style="flex: 1;" onclick="switchAuthTab('login')">Log In</button>
-  </div>
+      <!-- Auth Mode Switcher -->
+      <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+        <button type="button" id="tab-signup-btn" class="btn btn-primary" style="flex: 1;" onclick="switchAuthTab('signup')">Sign Up</button>
+        <button type="button" id="tab-login-btn" class="btn btn-secondary" style="flex: 1;" onclick="switchAuthTab('login')">Log In</button>
+      </div>
 
-  <!-- Sign Up Form -->
-  <form id="signup-form" onsubmit="handleSignUp(event)">
-    <div class="form-grid">
-      <input type="text" id="p-name" class="input-field" placeholder="Full Name" required style="grid-column: span 2;">
-      <input type="email" id="p-email" class="input-field" placeholder="Email Address" required style="grid-column: span 2;">
-      <input type="password" id="p-password" class="input-field" placeholder="Password" minlength="4" required style="grid-column: span 2;">
-      
-      <select id="p-gender" class="select-field" required>
-        <option value="" disabled selected>Select Gender</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
-      </select>
+      <!-- Sign Up Form -->
+      <form id="signup-form" onsubmit="handleSignUp(event)">
+        <div class="form-grid">
+          <input type="text" id="p-name" class="input-field" placeholder="Full Name" required style="grid-column: span 2;">
+          <input type="email" id="p-email" class="input-field" placeholder="Email Address" required style="grid-column: span 2;">
+          <input type="password" id="p-password" class="input-field" placeholder="Password" minlength="4" required style="grid-column: span 2;">
+          
+          <select id="p-gender" class="select-field" required>
+            <option value="" disabled selected>Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
 
-      <input type="date" id="p-dob" class="input-field" required title="Date of Birth">
+          <input type="date" id="p-dob" class="input-field" required title="Date of Birth">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Create Profile</button>
+      </form>
+
+      <!-- Log In Form -->
+      <form id="login-form" onsubmit="handleLogIn(event)" style="display: none;">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <input type="email" id="login-email" class="input-field" placeholder="Email Address" required>
+          <input type="password" id="login-password" class="input-field" placeholder="Password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Log In</button>
+      </form>
+
+      <!-- User Status Header -->
+      <div id="auth-user-status" style="margin-top: 1rem; text-align: center; display: none;">
+        <p style="color: var(--success); font-size: 0.9rem;" id="logged-in-user-text"></p>
+        <button class="btn btn-danger" onclick="handleLogOut()" style="width: 100%;">Log Out</button>
+      </div>
     </div>
-    <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Create Profile</button>
-  </form>
 
-  <!-- Log In Form -->
-  <form id="login-form" onsubmit="handleLogIn(event)" style="display: none;">
-    <div style="display: flex; flex-direction: column; gap: 10px;">
-      <input type="email" id="login-email" class="input-field" placeholder="Email Address" required>
-      <input type="password" id="login-password" class="input-field" placeholder="Password" required>
-    </div>
-    <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Log In</button>
-  </form>
-
-  <!-- User Status Header (When Logged In) -->
-  <div id="auth-user-status" style="margin-top: 1rem; text-align: center; display: none;">
-    <p style="color: var(--success); font-size: 0.9rem;" id="logged-in-user-text"></p>
-    <button class="btn btn-danger" onclick="handleLogOut()" style="width: 100%;">Log Out</button>
-  </div>
-</div>
-<!-- Admin Panel (Updated Form Grid) -->
-<div id="admin-panel" class="admin-panel">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    <h4 style="color:var(--accent); margin:0;">⚡ Create New Tournament</h4>
-    <button class="btn btn-secondary" onclick="logoutAdmin()">Exit Admin Mode</button>
-  </div>
-  
-  <form onsubmit="handleCreateTournament(event)">
-    <div class="form-grid">
-      <!-- Tournament Name -->
-      <input type="text" id="t-name" class="input-field" placeholder="Tournament Name (e.g. Ladies Night Special)" required style="grid-column: span 2;">
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="admin-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h4 style="color:var(--accent); margin:0;">⚡ Create New Tournament</h4>
+        <button class="btn btn-secondary" onclick="logoutAdmin()">Exit Admin Mode</button>
+      </div>
       
-      <!-- Date & Time Picker -->
-      <input type="datetime-local" id="t-date" class="input-field" required>
-      
-      <!-- Tournament Game Options -->
-      <select id="t-game" class="select-field" required>
-        <option value="Blackball">Blackball</option>
-        <option value="8 Ball">8 Ball</option>
-        <option value="9 Ball">9 Ball</option>
-        <option value="Heyball">Heyball</option>
-        <option value="Ultimate Pool">Ultimate Pool</option>
-      </select>
+      <form onsubmit="handleCreateTournament(event)">
+        <div class="form-grid">
+          <input type="text" id="t-name" class="input-field" placeholder="Tournament Name (e.g. Ladies Night Special)" required style="grid-column: span 2;">
+          <input type="datetime-local" id="t-date" class="input-field" required>
+          
+          <select id="t-game" class="select-field" required>
+            <option value="Blackball">Blackball</option>
+            <option value="8 Ball">8 Ball</option>
+            <option value="9 Ball">9 Ball</option>
+            <option value="Heyball">Heyball</option>
+            <option value="Ultimate Pool">Ultimate Pool</option>
+          </select>
 
-      <!-- Editable Integer Race Number -->
-      <input type="number" id="t-race" class="input-field" placeholder="Race To (e.g. 5)" min="1" step="1" required>
+          <input type="number" id="t-race" class="input-field" placeholder="Race To (e.g. 5)" min="1" step="1" required>
 
-      <!-- Tournament Format -->
-      <select id="t-format" class="select-field" required>
-        <option value="Knockouts">Knockouts</option>
-        <option value="Round Robin">Round Robin</option>
-      </select>
+          <select id="t-format" class="select-field" required>
+            <option value="Knockouts">Knockouts</option>
+            <option value="Round Robin">Round Robin</option>
+          </select>
 
-      <!-- Target Gender Division -->
-      <select id="t-target-gender" class="select-field" required style="grid-column: span 2;">
-        <option value="All">Open / All Genders</option>
-        <option value="Female">Female Only (Ladies)</option>
-        <option value="Male">Male Only (Mens)</option>
-      </select>
+          <select id="t-target-gender" class="select-field" required style="grid-column: span 2;">
+            <option value="All">Open / All Genders</option>
+            <option value="Female">Female Only (Ladies)</option>
+            <option value="Male">Male Only (Mens)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Publish Tournament</button>
+      </form>
     </div>
-    <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Publish Tournament</button>
-  </form>
-</div>
 
-  <!-- Date Filter Control -->
-<div class="filter-container" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
-  <label for="date-filter" style="font-size: 0.9rem; color: #94a3b8; font-weight: 600;">Filter by Date:</label>
-  <select id="date-filter" class="select-field" style="max-width: 200px;" onchange="renderTournaments()">
-    <option value="">All Dates</option>
-    <option value="today">Today</option>
-    <option value="tomorrow">Tomorrow</option>
-    <option value="this_week">This Week</option>
-    <option value="this_month">This Month</option>
-  </select>
-  <button class="btn btn-secondary" onclick="clearDateFilter()">Clear</button>
-</div>
+    <!-- Date Filter Control -->
+    <div class="filter-container">
+      <label for="date-filter" style="font-size: 0.9rem; color: #94a3b8; font-weight: 600;">Filter by Date:</label>
+      <select id="date-filter" class="select-field" style="max-width: 200px;" onchange="renderTournaments()">
+        <option value="">All Dates</option>
+        <option value="today">Today</option>
+        <option value="tomorrow">Tomorrow</option>
+        <option value="this_week">This Week</option>
+        <option value="this_month">This Month</option>
+      </select>
+      <button class="btn btn-secondary" onclick="clearDateFilter()">Clear</button>
+    </div>
 
-<!-- Active Tournaments List -->
-<div id="tournaments-container"></div>
-
-<!-- Active Tournaments List -->
-<div id="tournaments-container"></div>
-    <!-- Active Tournaments List -->
+    <!-- Active Tournaments List (Single Instance) -->
     <div id="tournaments-container"></div>
   </div>
 
