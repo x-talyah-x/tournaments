@@ -46,15 +46,18 @@
       border: 1px solid var(--border);
     }
 
-    .top-actions {
+   .top-actions {
       position: absolute;
       top: 1rem;
+      left: 1rem;
       right: 1rem;
       display: flex;
-      gap: 8px;
+      justify-content: space-between;
+      pointer-events: none; /* Allows clicks through container padding */
     }
 
     .action-corner-btn {
+      pointer-events: auto; /* Enables clicks on buttons */
       background: #020617;
       border: 1px solid var(--border);
       color: #94a3b8;
@@ -68,7 +71,7 @@
       gap: 6px;
       transition: all 0.2s ease;
     }
-
+    
     .action-corner-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
@@ -211,9 +214,9 @@
 <body id="app-body">
 
   <div class="container">
-    <div class="top-actions">
+   <div class="top-actions">
       <button id="player-profile-btn" class="action-corner-btn" onclick="togglePlayerProfilePanel()">
-        <span>👤</span> <span>Create a profile</span>
+        <span>👤</span> <span>Sign Up/Log In</span>
       </button>
       <button id="admin-toggle-btn" class="action-corner-btn" onclick="toggleAdminPrompt()">
         <span>🔒</span> <span id="admin-btn-label">Admin Login</span>
@@ -234,8 +237,9 @@
 
       <!-- Auth Mode Switcher -->
       <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+         <button type="button" id="tab-login-btn" class="btn btn-secondary" style="flex: 1;" onclick="switchAuthTab('login')">Log In</button>
         <button type="button" id="tab-signup-btn" class="btn btn-primary" style="flex: 1;" onclick="switchAuthTab('signup')">Sign Up</button>
-        <button type="button" id="tab-login-btn" class="btn btn-secondary" style="flex: 1;" onclick="switchAuthTab('login')">Log In</button>
+       
       </div>
 
       <!-- Sign Up Form -->
