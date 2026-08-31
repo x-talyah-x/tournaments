@@ -257,8 +257,17 @@ function renderTournaments() {
 async function handleCreateTournament(event) {
   event.preventDefault();
 
+  const selectedDate = new Date(document.getElementById("t-date").value);
+  const now = new Date();
+
+  // Check if the selected date is in the past
+  if (selectedDate < now) {
+    alert("Tournament date cannot be in the past. Please select a future date and time.");
+    return;
+  }
+  
   const name = document.getElementById('t-name').value.trim();
-  const eventDate = document.getElementById('t-date').value;
+  const eventDate = selectedDate;
   const gameType = document.getElementById('t-game').value;
   const raceNumber = parseInt(document.getElementById('t-race').value, 10);
   const format = document.getElementById('t-format').value;
