@@ -220,28 +220,52 @@
     </div>
 
     <!-- Player Profile Panel -->
-    <div id="player-panel" class="player-panel">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h4 style="color:var(--accent); margin:0;">👤 Player Profile Setup</h4>
-        <button class="btn btn-secondary" onclick="togglePlayerProfilePanel()">Close</button>
-      </div>
+   <!-- Player Auth & Profile Panel -->
+<div id="player-panel" class="player-panel">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h4 style="color:var(--accent); margin:0;">👤 Account Setup</h4>
+    <button class="btn btn-secondary" onclick="togglePlayerProfilePanel()">Close</button>
+  </div>
+
+  <!-- Auth Mode Switcher -->
+  <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+    <button type="button" id="tab-signup-btn" class="btn btn-primary" style="flex: 1;" onclick="switchAuthTab('signup')">Sign Up</button>
+    <button type="button" id="tab-login-btn" class="btn btn-secondary" style="flex: 1;" onclick="switchAuthTab('login')">Log In</button>
+  </div>
+
+  <!-- Sign Up Form -->
+  <form id="signup-form" onsubmit="handleSignUp(event)">
+    <div class="form-grid">
+      <input type="text" id="p-name" class="input-field" placeholder="Full Name" required style="grid-column: span 2;">
+      <input type="email" id="p-email" class="input-field" placeholder="Email Address" required style="grid-column: span 2;">
+      <input type="password" id="p-password" class="input-field" placeholder="Password" minlength="4" required style="grid-column: span 2;">
       
-      <form onsubmit="handleSavePlayerProfile(event)">
-        <div class="form-grid">
-          <input type="text" id="p-name" class="input-field" placeholder="Full Name" required style="grid-column: span 2;">
-          
-          <select id="p-gender" class="select-field" required>
-            <option value="" disabled selected>Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
+      <select id="p-gender" class="select-field" required>
+        <option value="" disabled selected>Select Gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
 
-          <input type="number" id="p-age" class="input-field" placeholder="Age" min="1" max="120" step="1" required>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Save Profile to Database</button>
-      </form>
+      <input type="date" id="p-dob" class="input-field" required title="Date of Birth">
     </div>
+    <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Create Profile</button>
+  </form>
 
+  <!-- Log In Form -->
+  <form id="login-form" onsubmit="handleLogIn(event)" style="display: none;">
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <input type="email" id="login-email" class="input-field" placeholder="Email Address" required>
+      <input type="password" id="login-password" class="input-field" placeholder="Password" required>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Log In</button>
+  </form>
+
+  <!-- User Status Header (When Logged In) -->
+  <div id="auth-user-status" style="margin-top: 1rem; text-align: center; display: none;">
+    <p style="color: var(--success); font-size: 0.9rem;" id="logged-in-user-text"></p>
+    <button class="btn btn-danger" onclick="handleLogOut()" style="width: 100%;">Log Out</button>
+  </div>
+</div>
 <!-- Admin Panel (Updated Form Grid) -->
 <div id="admin-panel" class="admin-panel">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
