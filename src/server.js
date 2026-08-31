@@ -101,7 +101,7 @@ async function handleLogIn(event) {
     .select('*')
     .eq('email', email)
     .eq('password', password)
-    .maybeSingle(); // Changed from single() to prevent error throwing on invalid credentials
+    .maybeSingle();
 
   if (error || !data) {
     alert("Invalid email or password.");
@@ -132,9 +132,12 @@ function setSessionUser(user) {
     if (profileBtn) profileBtn.innerHTML = `<span>👤</span> <span>${escapeHtml(user.player_name)}</span>`;
   } else {
     if (statusDiv) statusDiv.style.display = 'none';
-    if (profileBtn) profileBtn.innerHTML = `<span>👤</span> <span>Create Profile / Log In</span>`;
+    if (profileBtn) profileBtn.innerHTML = `<span>👤</span> <span>Sign Up / Log In</span>`;
     switchAuthTab('signup');
   }
+
+  // Re-render tournaments view to update action buttons dynamically
+  renderTournaments();
 }
 
 function handleLogOut() {
@@ -144,7 +147,7 @@ function handleLogOut() {
   togglePlayerProfilePanel();
 }
 
-// Fetch all profiles to populate registration dropdowns
+// Fetch all profiles to populate dropdowns when needed
 async function fetchProfiles() {
   const { data, error } = await supabaseClient
     .from('profiles')
@@ -232,14 +235,13 @@ function clearDateFilter() {
   }
 }
 
-// Render Tournaments & Participant Tables Grouped by Date Category
+// Render Tournaments & Dynamic Auth Controls
 function renderTournaments() {
   const container = document.getElementById('tournaments-container');
   if (!container) return;
 
   const filterPeriod = document.getElementById('date-filter')?.value;
 
-  // Filter out past events and apply user-selected date criteria
   const filteredData = tournamentsData.filter(t => {
     if (!t.event_date) return false;
 
@@ -249,10 +251,8 @@ function renderTournaments() {
     const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
     const diffDays = Math.round((eventDay - today) / (1000 * 60 * 60 * 24));
 
-    // Exclude past tournaments automatically
     if (diffDays < 0) return false;
 
-    // Apply period dropdown filter
     if (filterPeriod === 'today') return diffDays === 0;
     if (filterPeriod === 'tomorrow') return diffDays === 1;
     if (filterPeriod === 'this_week') {
@@ -276,7 +276,6 @@ function renderTournaments() {
     return;
   }
 
-  // Included 'Upcoming' in category list to match fallback category from getDateCategory
   const categoriesOrder = ['Today', 'Tomorrow', 'Next Week', 'Later', 'Upcoming'];
   const groupedTournaments = {};
 
@@ -303,21 +302,45 @@ function renderTournaments() {
         const formattedDate = formatTournamentDate(t.event_date);
         const tournamentName = t.name ? escapeHtml(t.name) : escapeHtml((t.game_type || '').toUpperCase());
         const targetGender = t.target_gender || 'All';
-
-        const eligibleProfiles = availableProfiles.filter(p => {
-          if (targetGender === 'All') return true;
-          return p.gender === targetGender;
-        });
-
-        const profileOptionsHtml = eligibleProfiles.length > 0
-          ? eligibleProfiles.map(p => 
-              `<option value="${p.id}">${escapeHtml(p.player_name || 'Unnamed')}</option>`
-            ).join('')
-          : `<option value="" disabled>No eligible profiles found</option>`;
-
         const genderBadgeText = targetGender === 'All' ? 'Open' : `${targetGender} Only`;
 
-        // FIXED: Changed form event handler name to handleSignup to match defined function
+        // Determine session registration & gender eligibility
+        const userRegistration = currentSessionUser 
+          ? entries.find(e => e.profiles?.id === currentSessionUser.id)
+          : null;
+
+        const isGenderEligible = !currentSessionUser || targetGender === 'All' || currentSessionUser.gender === targetGender;
+
+        // Dynamic Registration Action Bar
+        let actionAreaHtml = '';
+        if (!currentSessionUser) {
+          actionAreaHtml = `
+            <div style="margin-top: 1rem; text-align: center; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px dashed var(--border);">
+              <span style="font-size: 0.85rem; color: #94a3b8; margin-right: 8px;">Want to enter this event?</span>
+              <button class="btn btn-primary" onclick="togglePlayerProfilePanel()" style="padding: 4px 12px; font-size: 0.8rem;">Log In to Register</button>
+            </div>
+          `;
+        } else if (userRegistration) {
+          actionAreaHtml = `
+            <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; background: #064e3b22; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--success);">
+              <span style="color: var(--success); font-weight: 600; font-size: 0.85rem;">✓ You are registered for this tournament</span>
+              <button class="btn btn-danger" onclick="removeParticipant('${userRegistration.id}')" style="padding: 4px 10px; font-size: 0.8rem;">Leave Event</button>
+            </div>
+          `;
+        } else if (!isGenderEligible) {
+          actionAreaHtml = `
+            <div style="margin-top: 1rem; background: #450a0a22; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--danger); text-align: center;">
+              <span style="color: var(--danger); font-size: 0.85rem;">This division is restricted to ${targetGender} players only.</span>
+            </div>
+          `;
+        } else {
+          actionAreaHtml = `
+            <form onsubmit="handleSignup(event, '${t.id}')" style="margin-top: 1rem;">
+              <button type="submit" class="btn btn-primary" style="width: 100%;">Join Tournament as ${escapeHtml(currentSessionUser.player_name)}</button>
+            </form>
+          `;
+        }
+
         return `
           <div class="tournament-card">
             <div class="tournament-card-header">
@@ -336,13 +359,7 @@ function renderTournaments() {
               <span class="badge">Entries: ${entries.length}</span>
             </div>
 
-            <form class="signup-form" onsubmit="handleSignup(event, '${t.id}')" style="display: flex; gap: 8px; margin-top: 1rem;">
-              <select class="select-field" id="p-select-${t.id}" required style="flex: 1;">
-                <option value="" disabled selected>Select Player Profile...</option>
-                ${profileOptionsHtml}
-              </select>
-              <button type="submit" class="btn btn-primary">Join</button>
-            </form>
+            ${actionAreaHtml}
 
             ${entries.length > 0 ? `
               <div class="table-wrapper">
@@ -357,12 +374,17 @@ function renderTournaments() {
                   <tbody>
                     ${entries.map((entry, idx) => {
                       const profile = entry.profiles || {};
+                      const isCurrentUser = currentSessionUser && profile.id === currentSessionUser.id;
+
                       return `
-                        <tr>
+                        <tr style="${isCurrentUser ? 'background: rgba(56, 189, 248, 0.08);' : ''}">
                           <td>${idx + 1}</td>
-                          <td><strong>${escapeHtml(profile.player_name || 'Unknown')}</strong></td>
+                          <td>
+                            <strong>${escapeHtml(profile.player_name || 'Unknown')}</strong>
+                            ${isCurrentUser ? ' <span style="font-size: 0.75rem; color: var(--accent);">(You)</span>' : ''}
+                          </td>
                           <td class="admin-col">
-                            <button class="btn btn-danger" onclick="removeParticipant('${entry.id}')">✕</button>
+                            <button class="btn btn-danger" onclick="removeParticipant('${entry.id}', '${profile.id}')">✕</button>
                           </td>
                         </tr>
                       `;
@@ -380,7 +402,7 @@ function renderTournaments() {
   container.innerHTML = htmlContent;
 }
 
-// 3. Admin Actions
+// 4. Admin Actions
 async function handleCreateTournament(event) {
   event.preventDefault();
 
@@ -393,14 +415,12 @@ async function handleCreateTournament(event) {
   const selectedDate = new Date(rawDateValue);
   const now = new Date();
 
-  // Check if the selected date is in the past
   if (selectedDate < now) {
     alert("Tournament date cannot be in the past. Please select a future date and time.");
     return;
   }
   
   const name = document.getElementById('t-name')?.value.trim();
-  // FIXED: Converted Date object to ISO string format for Supabase
   const eventDate = selectedDate.toISOString();
   const gameType = document.getElementById('t-game')?.value;
   const raceNumber = parseInt(document.getElementById('t-race')?.value, 10);
@@ -441,14 +461,13 @@ async function deleteTournament(id) {
   }
 }
 
-// 4. Participant Actions (Registers selected profile)
+// 5. Participant Actions (Only active user session)
 async function handleSignup(e, tournamentId) {
   e.preventDefault();
-  const selectElement = document.getElementById(`p-select-${tournamentId}`);
-  const playerId = selectElement ? selectElement.value : null;
 
-  if (!playerId) {
-    alert("Please select a valid player profile.");
+  if (!currentSessionUser) {
+    alert("You must be logged in to register for a tournament.");
+    togglePlayerProfilePanel();
     return;
   }
 
@@ -456,33 +475,44 @@ async function handleSignup(e, tournamentId) {
     .from('registrations')
     .insert([{ 
       tournament_id: tournamentId, 
-      profile_id: playerId 
+      profile_id: currentSessionUser.id 
     }]);
 
   if (error) {
     console.error("Error signing up:", error);
     if (error.code === '23505' || (error.message && error.message.includes('unique constraint'))) {
-      alert("User already registered for this tournament.");
+      alert("You are already registered for this tournament.");
     } else {
-      alert("Failed to add entry: " + error.message);
+      alert("Failed to join: " + error.message);
     }
   } else {
     await loadTournaments();
   }
 }
 
-async function removeParticipant(entryId) {
-  if (confirm("Remove participant?")) {
+async function removeParticipant(entryId, targetProfileId = null) {
+  const isOwner = currentSessionUser && targetProfileId && currentSessionUser.id === targetProfileId;
+
+  if (!isAdmin && !isOwner && targetProfileId !== null) {
+    alert("You can only remove your own entry.");
+    return;
+  }
+
+  if (confirm("Are you sure you want to cancel this registration?")) {
     const { error } = await supabaseClient
       .from('registrations')
       .delete()
       .eq('id', entryId);
 
-    if (!error) await loadTournaments();
+    if (error) {
+      alert("Failed to remove registration: " + error.message);
+    } else {
+      await loadTournaments();
+    }
   }
 }
 
-// 5. Admin Authentication UI Toggle
+// 6. Admin Authentication UI Toggle
 function toggleAdminPrompt() {
   if (isAdmin) { 
     logoutAdmin(); 
@@ -514,46 +544,5 @@ function togglePlayerProfilePanel() {
   const panel = document.getElementById('player-panel');
   if (panel) {
     panel.classList.toggle('visible');
-  }
-}
-
-// Save New Player Profile to Supabase
-async function handleSavePlayerProfile(event) {
-  event.preventDefault();
-
-  const playerName = document.getElementById('p-name')?.value.trim();
-  const gender = document.getElementById('p-gender')?.value;
-  const age = parseInt(document.getElementById('p-age')?.value, 10);
-
-  if (!playerName || !gender || isNaN(age)) {
-    alert("Please fill in all profile fields correctly.");
-    return;
-  }
-
-  const { data, error } = await supabaseClient
-    .from('profiles')
-    .insert([
-      { 
-        player_name: playerName, 
-        gender: gender, 
-        age: age 
-      }
-    ])
-    .select();
-
-  if (error) {
-    console.error("Error saving profile:", error);
-    if (error.code === '23505' || (error.message && error.message.includes('unique constraint'))) {
-      alert("User already exists.");
-    } else {
-      alert("Error saving profile: " + error.message);
-    }
-  } else {
-    alert("Profile created successfully!");
-    event.target.reset();
-    togglePlayerProfilePanel();
-    
-    await fetchProfiles();
-    renderTournaments();
   }
 }
