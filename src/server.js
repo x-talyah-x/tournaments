@@ -161,7 +161,6 @@ async function loadTournaments() {
         profiles (
           id,
           player_name,
-          age,
           gender
         )
       )
