@@ -316,8 +316,7 @@ function renderTournaments() {
         if (!currentSessionUser) {
           actionAreaHtml = `
             <div style="margin-top: 1rem; text-align: center; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px dashed var(--border);">
-              <span style="font-size: 0.85rem; color: #94a3b8; margin-right: 8px;">Want to enter this event?</span>
-              <button class="btn btn-primary" onclick="togglePlayerProfilePanel()" style="padding: 4px 12px; font-size: 0.8rem;">Log In to Register</button>
+              <span style="font-size: 0.85rem; color: #94a3b8; margin-right: 8px;">Want to enter this event? Log In to Join</span>
             </div>
           `;
         } else if (userRegistration) {
