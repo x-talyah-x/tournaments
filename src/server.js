@@ -14,6 +14,124 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadTournaments();
 });
 
+let currentSessionUser = null;
+
+// Tab UI Toggle
+function switchAuthTab(tab) {
+  if (currentSessionUser) return;
+
+  const signUpForm = document.getElementById('signup-form');
+  const logInForm = document.getElementById('login-form');
+  const signUpBtn = document.getElementById('tab-signup-btn');
+  const logInBtn = document.getElementById('tab-login-btn');
+
+  if (tab === 'signup') {
+    signUpForm.style.display = 'block';
+    logInForm.style.display = 'none';
+    signUpBtn.className = 'btn btn-primary';
+    logInBtn.className = 'btn btn-secondary';
+  } else {
+    signUpForm.style.display = 'none';
+    logInForm.style.display = 'block';
+    signUpBtn.className = 'btn btn-secondary';
+    logInBtn.className = 'btn btn-primary';
+  }
+}
+
+// 1. REGISTER PROFILE
+async function handleSignUp(event) {
+  event.preventDefault();
+
+  const playerName = document.getElementById('p-name').value.trim();
+  const email = document.getElementById('p-email').value.trim();
+  const password = document.getElementById('p-password').value;
+  const gender = document.getElementById('p-gender').value;
+  const dob = document.getElementById('p-dob').value;
+
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .insert([
+      { 
+        player_name: playerName,
+        email: email,
+        password: password,
+        gender: gender, 
+        dob: dob
+      }
+    ])
+    .select();
+
+  if (error) {
+    if (error.code === '23505' || error.message.includes('unique constraint')) {
+      alert("A user with this email already exists.");
+    } else {
+      alert("Error saving profile: " + error.message);
+    }
+  } else {
+    alert("Profile created successfully!");
+    event.target.reset();
+    setSessionUser(data[0]);
+    togglePlayerProfilePanel();
+    
+    await fetchProfiles();
+    renderTournaments();
+  }
+}
+
+// 2. LOG IN
+async function handleLogIn(event) {
+  event.preventDefault();
+
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('email', email)
+    .eq('password', password)
+    .single();
+
+  if (error || !data) {
+    alert("Invalid email or password.");
+  } else {
+    alert(`Welcome back, ${data.player_name}!`);
+    event.target.reset();
+    setSessionUser(data);
+    togglePlayerProfilePanel();
+  }
+}
+
+// 3. LOGOUT & SESSION MANAGEMENT
+function setSessionUser(user) {
+  currentSessionUser = user;
+
+  const statusDiv = document.getElementById('auth-user-status');
+  const signUpForm = document.getElementById('signup-form');
+  const logInForm = document.getElementById('login-form');
+  const profileBtn = document.getElementById('player-profile-btn');
+
+  if (user) {
+    if (statusDiv) statusDiv.style.display = 'block';
+    if (signUpForm) signUpForm.style.display = 'none';
+    if (logInForm) logInForm.style.display = 'none';
+    
+    document.getElementById('logged-in-user-text').innerText = `Logged in: ${user.player_name} (${user.email})`;
+    if (profileBtn) profileBtn.innerHTML = `<span>👤</span> <span>${user.player_name}</span>`;
+  } else {
+    if (statusDiv) statusDiv.style.display = 'none';
+    if (profileBtn) profileBtn.innerHTML = `<span>👤</span> <span>Create Profile / Log In</span>`;
+    switchAuthTab('signup');
+  }
+}
+
+function handleLogOut() {
+  currentSessionUser = null;
+  setSessionUser(null);
+  alert("Logged out.");
+  togglePlayerProfilePanel();
+}
+
 // Fetch all profiles to populate registration dropdowns
 async function fetchProfiles() {
   const { data, error } = await supabaseClient
