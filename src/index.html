@@ -239,9 +239,17 @@
       <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
          <button type="button" id="tab-login-btn" class="btn btn-primary" style="flex: 1;" onclick="switchAuthTab('login')">Log In</button>
         <button type="button" id="tab-signup-btn" class="btn btn-secondary" style="flex: 1;" onclick="switchAuthTab('signup')">Sign Up</button>
-       
       </div>
 
+       <!-- Log In Form -->
+      <form id="login-form" onsubmit="handleLogIn(event)" style="display: none;">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <input type="email" id="login-email" class="input-field" placeholder="Email Address" required>
+          <input type="password" id="login-password" class="input-field" placeholder="Password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Log In</button>
+      </form>
+      
       <!-- Sign Up Form -->
       <form id="signup-form" onsubmit="handleSignUp(event)">
         <div class="form-grid">
@@ -260,14 +268,7 @@
         <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Create Profile</button>
       </form>
 
-      <!-- Log In Form -->
-      <form id="login-form" onsubmit="handleLogIn(event)" style="display: none;">
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <input type="email" id="login-email" class="input-field" placeholder="Email Address" required>
-          <input type="password" id="login-password" class="input-field" placeholder="Password" required>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Log In</button>
-      </form>
+     
 
       <!-- User Status Header -->
       <div id="auth-user-status" style="margin-top: 1rem; text-align: center; display: none;">
