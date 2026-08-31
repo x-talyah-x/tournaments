@@ -106,15 +106,15 @@ function clearDateFilter() {
 }
 
 // Updated renderTournaments function with period-based filtering
+// Updated renderTournaments function (filters out past events)
 function renderTournaments() {
   const container = document.getElementById('tournaments-container');
   if (!container) return;
 
   const filterPeriod = document.getElementById('date-filter')?.value;
 
-  // Filter tournaments matching the selected timeframe
+  // 1. Filter out past events and apply user-selected date criteria
   const filteredData = tournamentsData.filter(t => {
-    if (!filterPeriod) return true;
     if (!t.event_date) return false;
 
     const now = new Date();
@@ -123,6 +123,10 @@ function renderTournaments() {
     const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
     const diffDays = Math.round((eventDay - today) / (1000 * 60 * 60 * 24));
 
+    // Exclude past tournaments automatically
+    if (diffDays < 0) return false;
+
+    // Apply period dropdown filter
     if (filterPeriod === 'today') return diffDays === 0;
     if (filterPeriod === 'tomorrow') return diffDays === 1;
     if (filterPeriod === 'this_week') {
@@ -141,12 +145,13 @@ function renderTournaments() {
 
   if (filteredData.length === 0) {
     container.innerHTML = filterPeriod 
-      ? `<p style="text-align:center; color:#64748b;">No tournaments found for this timeframe.</p>`
+      ? `<p style="text-align:center; color:#64748b;">No upcoming tournaments found for this timeframe.</p>`
       : `<p style="text-align:center; color:#64748b;">No active tournaments scheduled.</p>`;
     return;
   }
 
-  const categoriesOrder = ['Today', 'Tomorrow', 'Next Week', 'Later', 'Past Events', 'Upcoming'];
+  // 2. Removed 'Past Events' from category grouping order
+  const categoriesOrder = ['Today', 'Tomorrow', 'Next Week', 'Later', 'Upcoming'];
   const groupedTournaments = {};
 
   filteredData.forEach(t => {
@@ -173,7 +178,6 @@ function renderTournaments() {
         const tournamentName = t.name ? escapeHtml(t.name) : escapeHtml((t.game_type || '').toUpperCase());
         const targetGender = t.target_gender || 'All';
 
-        // Filter profiles for this specific tournament's gender restrictions
         const eligibleProfiles = availableProfiles.filter(p => {
           if (targetGender === 'All') return true;
           return p.gender === targetGender;
@@ -248,6 +252,7 @@ function renderTournaments() {
 
   container.innerHTML = htmlContent;
 }
+
 // 3. Admin Actions
 async function handleCreateTournament(event) {
   event.preventDefault();
