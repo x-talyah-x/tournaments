@@ -242,42 +242,49 @@
       </form>
     </div>
 
-    <!-- Admin Panel -->
-    <div id="admin-panel" class="admin-panel">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h4 style="color:var(--accent); margin:0;">⚡ Create New Tournament</h4>
-        <button class="btn btn-secondary" onclick="logoutAdmin()">Exit Admin Mode</button>
-      </div>
+<!-- Admin Panel (Updated Form Grid) -->
+<div id="admin-panel" class="admin-panel">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h4 style="color:var(--accent); margin:0;">⚡ Create New Tournament</h4>
+    <button class="btn btn-secondary" onclick="logoutAdmin()">Exit Admin Mode</button>
+  </div>
+  
+  <form onsubmit="handleCreateTournament(event)">
+    <div class="form-grid">
+      <!-- Tournament Name -->
+      <input type="text" id="t-name" class="input-field" placeholder="Tournament Name (e.g. Ladies Night Special)" required style="grid-column: span 2;">
       
-      <form onsubmit="handleCreateTournament(event)">
-        <div class="form-grid">
-          <!-- Tournament Name -->
-          <input type="text" id="t-name" class="input-field" placeholder="Tournament Name (e.g. Midrand Masters)" required style="grid-column: span 2;">
-          
-          <!-- Date & Time Picker -->
-          <input type="datetime-local" id="t-date" class="input-field" required>
-          
-          <!-- Tournament Game Options -->
-          <select id="t-game" class="select-field" required>
-            <option value="Blackball">Blackball</option>
-            <option value="8 Ball">8 Ball</option>
-            <option value="9 Ball">9 Ball</option>
-            <option value="Heyball">Heyball</option>
-            <option value="Ultimate Pool">Ultimate Pool</option>
-          </select>
+      <!-- Date & Time Picker -->
+      <input type="datetime-local" id="t-date" class="input-field" required>
+      
+      <!-- Tournament Game Options -->
+      <select id="t-game" class="select-field" required>
+        <option value="Blackball">Blackball</option>
+        <option value="8 Ball">8 Ball</option>
+        <option value="9 Ball">9 Ball</option>
+        <option value="Heyball">Heyball</option>
+        <option value="Ultimate Pool">Ultimate Pool</option>
+      </select>
 
-          <!-- Editable Integer Race Number -->
-          <input type="number" id="t-race" class="input-field" placeholder="Race To (e.g. 5)" min="1" step="1" required>
+      <!-- Editable Integer Race Number -->
+      <input type="number" id="t-race" class="input-field" placeholder="Race To (e.g. 5)" min="1" step="1" required>
 
-          <!-- Tournament Format -->
-          <select id="t-format" class="select-field" required>
-            <option value="Knockouts">Knockouts</option>
-            <option value="Round Robin">Round Robin</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;">Publish Tournament</button>
-      </form>
+      <!-- Tournament Format -->
+      <select id="t-format" class="select-field" required>
+        <option value="Knockouts">Knockouts</option>
+        <option value="Round Robin">Round Robin</option>
+      </select>
+
+      <!-- Target Gender Division -->
+      <select id="t-target-gender" class="select-field" required style="grid-column: span 2;">
+        <option value="All">Open / All Genders</option>
+        <option value="Female">Female Only (Ladies)</option>
+        <option value="Male">Male Only (Mens)</option>
+      </select>
     </div>
+    <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Publish Tournament</button>
+  </form>
+</div>
 
   <!-- Date Filter Control -->
 <div class="filter-container" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
