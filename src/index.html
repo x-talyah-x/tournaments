@@ -287,7 +287,8 @@
     </div>
 
     <!-- Admin Panel -->
-  <div id="admin-panel" class="admin-panel">
+ <!-- Admin Panel -->
+<div id="admin-panel" class="admin-panel">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
     <h4 style="color: var(--accent); margin: 0;">⚡ Create New Tournament</h4>
     <button type="button" class="btn btn-secondary" onclick="logoutAdmin()">Exit Admin Mode</button>
@@ -325,6 +326,7 @@
         class="input-field" 
         placeholder="Race To (e.g. 5)" 
         min="1" 
+        step="1" 
         required
       >
 
@@ -333,7 +335,8 @@
         <option value="Round Robin">Round Robin</option>
       </select>
 
-      <select id="t-target-gender" class="select-field" required style="grid-column: span 2;">
+      <!-- Target Gender and Entry Fee grouped into the same row -->
+      <select id="t-target-gender" class="select-field" required>
         <option value="All">Open / All Genders</option>
         <option value="Female">Female Only (Ladies)</option>
         <option value="Male">Male Only (Mens)</option>
@@ -345,6 +348,7 @@
         class="input-field" 
         placeholder="Entry Fee (R)" 
         min="1" 
+        step="1" 
         required
       >
 
