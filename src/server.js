@@ -454,7 +454,7 @@ async function handleCreateTournament(event) {
   const { data: notifiedUsers, error: userError } = await supabaseClient
     .from('profiles')
     .select('email, player_name')
-    .eq('notifications_enabled', true); // Assumes boolean column name 'notifications_enabled'
+    .eq('notifications', true); // Assumes boolean column name 'notifications_enabled'
 
   if (!userError && notifiedUsers && notifiedUsers.length > 0) {
     // 3. Trigger Email Dispatch via Supabase Edge Function
