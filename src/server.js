@@ -646,29 +646,71 @@ async function removeParticipant(entryId, targetProfileId = null) {
 
   if (!confirm("Are you sure you want to cancel this registration?")) return;
 
-  if (registration.payment_status === 'paid' && registration.paid_amount > 0) {
-      const { error: refundErr } = await supabaseAdmin
-        .from('refund_requests')
-        .insert([{
-          registration_id: registration.id,
-          profile_id: registration.profile_id,
-          amount: registration.paid_amount,
-          payment_reference: registration.payment_reference,
-          status: 'pending'
-        }]);
+  // 1. Fetch registration details along with profile and tournament info
+  const { data: registrationData, error: fetchErr } = await supabaseClient
+    .from('registrations')
+    .select(`
+      id,
+      payment_status,
+      payment_reference,
+      paid_amount,
+      profiles (
+        player_name,
+        email
+      ),
+      tournaments (
+        name,
+        game_type
+      )
+    `)
+    .eq('id', entryId)
+    .maybeSingle();
 
-      if (refundErr) {
-        console.error("Error logging refund:", refundErr);
-      }
+  if (fetchErr || !registrationData) {
+    alert("Could not fetch registration details.");
+    return;
+  }
+
+  const isPaid = registrationData.payment_status === 'paid' && registrationData.paid_amount > 0;
+
+  // 2. If registration was paid, log it in the refund_requests table
+  if (isPaid) {
+    const tournamentTitle = registrationData.tournaments?.name || registrationData.tournaments?.game_type || 'Unknown Event';
+    const playerName = registrationData.profiles?.player_name || currentSessionUser?.player_name || 'Unknown';
+    const playerEmail = registrationData.profiles?.email || currentSessionUser?.email || 'N/A';
+
+    const { error: refundLogErr } = await supabaseClient
+      .from('refund_requests')
+      .insert([{
+        registration_id: entryId,
+        tournament_name: tournamentTitle,
+        player_name: playerName,
+        player_email: playerEmail,
+        payment_reference: registrationData.payment_reference || 'N/A',
+        amount: registrationData.paid_amount,
+        status: 'pending'
+      }]);
+
+    if (refundLogErr) {
+      alert("Failed to record refund request: " + refundLogErr.message);
+      return;
     }
+  }
 
-  const result = await response.json();
+  // 3. Remove registration record from Supabase
+  const { error: deleteError } = await supabaseClient
+    .from('registrations')
+    .delete()
+    .eq('id', entryId);
 
-  if (response.ok) {
-    alert(result.message + (result.refundLogged ? " Your refund request has been logged." : ""));
-    await loadTournaments();
+  if (deleteError) {
+    alert("Failed to remove registration: " + deleteError.message);
   } else {
-    alert("Failed: " + result.error);
+    alert("Registration canceled successfully." + (isPaid ? " Your refund request has been logged for admin payout." : ""));
+    await loadTournaments();
+    if (isAdmin && typeof loadRefundRequests === 'function') {
+      await loadRefundRequests();
+    }
   }
 }
 
