@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta name="description" content="Basil's Billiards Tournament Hub - Entries and Player Management">
   <title>Basil's Billiards - Tournament Hub</title>
   
@@ -11,7 +11,7 @@
   <!-- Paystack Inline JS SDK -->
   <script src="https://js.paystack.co/v1/inline.js"></script>
   
-  <!-- Load client application logic (Updated filename from server.js to app.js) -->
+  <!-- Load client application logic -->
   <script src="server.js" defer></script>
   
   <style>
@@ -29,17 +29,19 @@
 
     * { 
       box-sizing: border-box; 
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg);
       color: var(--text);
       display: flex;
       justify-content: center;
-      padding: clamp(1rem, 3vw, 2.5rem) 0.75rem;
+      padding: clamp(0.5rem, 2vw, 2.5rem) 0.5rem;
       margin: 0;
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
 
     .container {
@@ -48,58 +50,60 @@
       max-width: 700px;
       background: var(--card-bg);
       border-radius: 16px;
-      padding: clamp(1.25rem, 4vw, 2rem);
+      padding: clamp(1rem, 3.5vw, 2rem);
       box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
       border: 1px solid var(--border);
     }
 
+    /* Modern top navigation bar layout for mobile */
     .top-actions {
-      position: absolute;
-      top: 1rem;
-      left: 1rem;
-      right: 1rem;
       display: flex;
       justify-content: space-between;
-      pointer-events: none;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 1rem;
     }
 
     .brand-logo {
-      max-width: 120px;
+      max-width: 100px;
       height: auto;
       margin: 0 auto 0.5rem auto;
       display: block;
     }
 
     .action-corner-btn {
-      pointer-events: auto;
       background: var(--surface);
       border: 1px solid var(--border);
       color: #94a3b8;
-      padding: 6px 12px;
+      padding: 8px 12px;
       border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
+      min-height: 44px; /* Minimum target area for mobile touch */
+      flex: 1;
+      max-width: 50%;
       transition: all 0.2s ease;
     }
     
-    .action-corner-btn:hover {
+    .action-corner-btn:hover, .action-corner-btn:active {
       border-color: var(--accent);
       color: var(--accent);
     }
 
     .header {
       text-align: center;
-      margin-top: 1.5rem;
+      margin-top: 0.5rem;
       margin-bottom: 1.5rem;
     }
 
     .header h1 {
       margin: 0.25rem 0;
-      font-size: clamp(1.5rem, 5vw, 2.25rem);
+      font-size: clamp(1.4rem, 6vw, 2.25rem);
       color: #ffffff;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -108,7 +112,7 @@
     .header h3 {
       margin: 0;
       color: var(--accent);
-      font-size: clamp(0.9rem, 3vw, 1.1rem);
+      font-size: clamp(0.85rem, 3.5vw, 1.1rem);
       text-transform: uppercase;
     }
 
@@ -117,7 +121,7 @@
       background: var(--surface);
       border: 1px solid var(--accent);
       border-radius: 12px;
-      padding: 1.25rem;
+      padding: 1rem;
       margin-bottom: 1.5rem;
     }
 
@@ -136,14 +140,15 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
     }
 
     .tournament-card-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      gap: 10px;
       margin-bottom: 8px;
     }
 
@@ -151,12 +156,13 @@
       margin: 0;
       font-size: 1.1rem;
       color: #fff;
+      word-break: break-word;
     }
 
     .tournament-badge-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       margin: 10px 0;
     }
 
@@ -165,56 +171,133 @@
       color: var(--accent);
       padding: 4px 10px;
       border-radius: 12px;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 600;
     }
 
+    /* 16px font-size prevents automated zoom-in on iOS Safari */
     .input-field, .select-field {
-      padding: 10px;
+      padding: 12px 10px;
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       color: var(--text);
-      font-size: 0.9rem;
+      font-size: 16px;
       width: 100%;
+      min-height: 44px;
     }
 
-    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+    input[type="date"]::-webkit-calendar-picker-indicator {
       filter: invert(1);
       cursor: pointer;
     }
 
     .btn {
-      padding: 10px 14px;
+      padding: 12px 14px;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
-      font-size: 0.9rem;
-      white-space: nowrap;
+      font-size: 0.95rem;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
     }
 
     .btn-primary { background: var(--accent); color: #020617; }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-secondary { background: #334155; color: #fff; }
 
-    .table-wrapper { width: 100%; overflow-x: auto; margin-top: 1rem; }
-    .leaderboard { width: 100%; border-collapse: collapse; }
-    .leaderboard th, .leaderboard td { padding: 10px; text-align: left; }
-    .leaderboard th { border-bottom: 2px solid var(--border); color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
+    .table-wrapper { 
+      width: 100%; 
+      overflow-x: auto; 
+      margin-top: 1rem;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .leaderboard { 
+      width: 100%; 
+      border-collapse: collapse; 
+    }
+
+    .leaderboard th, .leaderboard td { 
+      padding: 10px 8px; 
+      text-align: left; 
+      font-size: 0.85rem;
+    }
+
+    .leaderboard th { 
+      border-bottom: 2px solid var(--border); 
+      color: #64748b; 
+      font-size: 0.75rem; 
+      text-transform: uppercase; 
+    }
 
     .admin-col { display: none; text-align: right; }
     .admin-mode-active .admin-col { display: table-cell; }
 
     .filter-container {
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
-    @media (max-width: 580px) {
-      .form-grid { grid-template-columns: 1fr; }
+    .filter-container label {
+      width: 100%;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    /* Mobile Adaptations */
+    @media (max-width: 600px) {
+      body {
+        padding: 0;
+      }
+
+      .container {
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        padding: 0.75rem;
+      }
+
+      .form-grid { 
+        grid-template-columns: 1fr; 
+      }
+
+      .form-grid > * {
+        grid-column: span 1 !important;
+      }
+
+      .filter-container {
+        display: grid;
+        grid-template-columns: 1fr auto;
+      }
+
+      .filter-container label {
+        grid-column: span 2;
+      }
+
+      .filter-container .select-field {
+        max-width: 100% !important;
+      }
+
+      /* Stack control buttons vertically inside mobile panels */
+      .admin-panel-header, .player-panel-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px;
+      }
+
+      .admin-panel-header .btn, .player-panel-header .btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -223,10 +306,10 @@
   <div class="container">
     <div class="top-actions">
       <button id="player-profile-btn" class="action-corner-btn" onclick="togglePlayerProfilePanel()">
-        <span>👤</span> <span>Sign Up / Log In</span>
+        <span>👤</span> <span>Account</span>
       </button>
       <button id="admin-toggle-btn" class="action-corner-btn" onclick="toggleAdminPrompt()">
-        <span>🔒</span> <span id="admin-btn-label">Admin Login</span>
+        <span>🔒</span> <span id="admin-btn-label">Admin</span>
       </button>
     </div>
 
@@ -238,7 +321,7 @@
 
     <!-- Player Profile Panel -->
     <div id="player-panel" class="player-panel">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div class="player-panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h4 style="color:var(--accent); margin:0;">👤 Account Setup</h4>
         <button class="btn btn-primary" onclick="togglePlayerProfilePanel()">Close</button>
       </div>
@@ -261,10 +344,10 @@
       <!-- Sign Up Form -->
       <form id="signup-form" onsubmit="handleSignUp(event)" style="display: none;">
         <div class="form-grid">
-          <input type="text" id="p-name" class="input-field" placeholder="First Name" required style="grid-column: span 2;" aria-label="First Name">
-          <input type="text" id="p-surname" class="input-field" placeholder="Surname" required style="grid-column: span 2;" aria-label="Surname">
-          <input type="email" id="p-email" class="input-field" placeholder="Email Address" required style="grid-column: span 2;" aria-label="Email Address">
-          <input type="password" id="p-password" class="input-field" placeholder="Password" minlength="6" required style="grid-column: span 2;" aria-label="Password">
+          <input type="text" id="p-name" class="input-field" placeholder="First Name" required aria-label="First Name">
+          <input type="text" id="p-surname" class="input-field" placeholder="Surname" required aria-label="Surname">
+          <input type="email" id="p-email" class="input-field" placeholder="Email Address" required aria-label="Email Address">
+          <input type="password" id="p-password" class="input-field" placeholder="Password" minlength="6" required aria-label="Password">
           
           <select id="p-gender" class="select-field" required aria-label="Gender">
             <option value="" disabled selected>Select Gender</option>
@@ -286,7 +369,7 @@
 
     <!-- Admin Panel -->
     <div id="admin-panel" class="admin-panel">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div class="admin-panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h4 style="color: var(--accent); margin: 0;">⚡ Create New Tournament</h4>
         <button type="button" class="btn btn-secondary" onclick="logoutAdmin()">Exit Admin Mode</button>
       </div>
@@ -299,7 +382,6 @@
             class="input-field" 
             placeholder="Tournament Name (e.g. Ladies Night Special)" 
             required 
-            style="grid-column: span 2;"
             aria-label="Tournament Name"
           >
 
@@ -352,25 +434,25 @@
             aria-label="Entry Fee"
           >
 
-          <div style="grid-column: span 2; display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-            <input type="checkbox" id="t-is-doubles" style="width: 18px; height: 18px; cursor: pointer;">
-            <label for="t-is-doubles" style="font-size: 0.9rem; color: var(--text); cursor: pointer;">Doubles Competition</label>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 0;">
+            <input type="checkbox" id="t-is-doubles" style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="t-is-doubles" style="font-size: 0.95rem; color: var(--text); cursor: pointer;">Doubles Competition</label>
           </div>
         </div>
 
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Publish Tournament</button>
       </form>
 
-      <hr style="border: 0; border-top: 1px solid var(--border); margin: 2rem 0 1.5rem 0;">
+      <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
 
       <!-- Admin Refund Management Section -->
       <div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-          <h4 style="color: var(--gold); margin: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.5px;">
-            💳 Pending & Processed Refunds
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 8px;">
+          <h4 style="color: var(--gold); margin: 0; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">
+            💳 Refund Requests
           </h4>
-          <button type="button" class="btn btn-secondary" onclick="loadRefundRequests()" style="padding: 4px 10px; font-size: 0.8rem;">
-            🔄 Refresh List
+          <button type="button" class="btn btn-secondary" onclick="loadRefundRequests()" style="padding: 6px 10px; font-size: 0.8rem;">
+            🔄 Refresh
           </button>
         </div>
         
@@ -380,8 +462,8 @@
 
     <!-- Date Filter Control -->
     <div class="filter-container">
-      <label for="date-filter" style="font-size: 0.9rem; color: #94a3b8; font-weight: 600;">Filter by Date:</label>
-      <select id="date-filter" class="select-field" style="max-width: 200px;" onchange="renderTournaments()">
+      <label for="date-filter">Filter by Date:</label>
+      <select id="date-filter" class="select-field" onchange="renderTournaments()">
         <option value="">All Dates</option>
         <option value="today">Today</option>
         <option value="tomorrow">Tomorrow</option>
