@@ -646,10 +646,23 @@ async function removeParticipant(entryId, targetProfileId = null) {
 
   if (!confirm("Are you sure you want to cancel this registration?")) return;
 
-  // 1. Fetch current registration details to check payment status
+  // 1. Fetch registration details along with profile and tournament info
   const { data: registration, error: fetchErr } = await supabaseClient
     .from('registrations')
-    .select('id, payment_status, payment_reference, paid_amount')
+    .select(`
+      id,
+      payment_status,
+      payment_reference,
+      paid_amount,
+      profiles (
+        player_name,
+        email
+      ),
+      tournaments (
+        name,
+        game_type
+      )
+    `)
     .eq('id', entryId)
     .single();
 
@@ -658,40 +671,31 @@ async function removeParticipant(entryId, targetProfileId = null) {
     return;
   }
 
-  // 2. Trigger refund process if paid via Paystack
-  if (registration.payment_status === 'paid' && registration.payment_reference) {
-    const processRefund = confirm("This registration includes a paid fee. Process refund via Paystack?");
+  // 2. If registration was paid, log it in the refund_requests table
+  if (registration.payment_status === 'paid' && registration.paid_amount > 0) {
+    const tournamentTitle = registration.tournaments?.name || registration.tournaments?.game_type || 'Unknown Event';
+    const playerName = registration.profiles?.player_name || currentSessionUser?.player_name || 'Unknown';
+    const playerEmail = registration.profiles?.email || currentSessionUser?.email || 'N/A';
 
-    if (processRefund) {
-      try {
-        const response = await fetch(`${SUPABASE_URL}/functions/v1/refund-paystack`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({
-            reference: registration.payment_reference,
-            amount: registration.paid_amount
-          })
-        });
+    const { error: refundLogErr } = await supabaseClient
+      .from('refund_requests')
+      .insert([{
+        registration_id: entryId,
+        tournament_name: tournamentTitle,
+        player_name: playerName,
+        player_email: playerEmail,
+        payment_reference: registration.payment_reference || 'N/A',
+        amount: registration.paid_amount,
+        status: 'pending'
+      }]);
 
-        const refundResult = await response.json();
-
-        if (!response.ok || refundResult.error) {
-          alert(`Refund failed: ${refundResult.error}. Registration removal canceled.`);
-          return;
-        }
-
-        alert("Refund successfully processed via Paystack!");
-      } catch (err) {
-        alert("Network error processing refund: " + err.message);
-        return;
-      }
+    if (refundLogErr) {
+      alert("Failed to record refund request: " + refundLogErr.message);
+      return;
     }
   }
 
-  // 3. Delete or update record in Supabase
+  // 3. Remove registration record from Supabase
   const { error: deleteError } = await supabaseClient
     .from('registrations')
     .delete()
@@ -700,10 +704,13 @@ async function removeParticipant(entryId, targetProfileId = null) {
   if (deleteError) {
     alert("Failed to remove registration: " + deleteError.message);
   } else {
-    alert("Registration removed successfully.");
+    alert("Registration canceled successfully." + (registration.payment_status === 'paid' ? " Your refund request has been logged for admin payout." : ""));
     await loadTournaments();
+    if (isAdmin) await loadRefundRequests(); // Refresh admin list if in admin view
   }
 }
+
+
 // 6. Admin Authentication UI Toggle
 function toggleAdminPrompt() {
   if (isAdmin) { 
@@ -711,6 +718,17 @@ function toggleAdminPrompt() {
     return; 
   }
   
+  const inputPass = prompt("Admin Password:");
+  if (inputPass) {
+    isAdmin = true;
+    document.getElementById('app-body')?.classList.add('admin-mode-active');
+    document.getElementById('admin-panel')?.classList.add('visible');
+    const label = document.getElementById('admin-btn-label');
+    if (label) label.innerText = 'Exit Edit Mode';
+    renderTournaments();
+    loadRefundRequests(); // <-- Add this call
+  }
+}
   const inputPass = prompt("Admin Password:");
   if (inputPass) {
     isAdmin = true;
