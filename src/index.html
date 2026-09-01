@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Basil's Billiards Tournament Hub - Entries and Player Management">
   <title>Basil's Billiards - Tournament Hub</title>
   
@@ -29,43 +29,42 @@
 
     * { 
       box-sizing: border-box; 
-      -webkit-tap-highlight-color: transparent;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg);
       color: var(--text);
       display: flex;
       justify-content: center;
-      padding: clamp(0.5rem, 2vw, 2.5rem) 0.5rem;
+      align-items: flex-start;
+      padding: clamp(0.75rem, 3vw, 2.5rem) clamp(0.5rem, 2vw, 1rem);
       margin: 0;
       min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
     }
 
     .container {
       position: relative;
       width: 100%;
-      max-width: 700px;
+      max-width: 750px;
       background: var(--card-bg);
-      border-radius: 16px;
-      padding: clamp(1rem, 3.5vw, 2rem);
+      border-radius: clamp(10px, 2vw, 16px);
+      padding: clamp(1rem, 4vw, 2rem);
       box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
       border: 1px solid var(--border);
     }
 
-    /* Modern top navigation bar layout for mobile */
     .top-actions {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 8px;
       margin-bottom: 1rem;
+      width: 100%;
     }
 
     .brand-logo {
-      max-width: 100px;
+      max-width: clamp(80px, 15vw, 120px);
       height: auto;
       margin: 0 auto 0.5rem auto;
       display: block;
@@ -75,22 +74,20 @@
       background: var(--surface);
       border: 1px solid var(--border);
       color: #94a3b8;
-      padding: 8px 12px;
+      padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 14px);
       border-radius: 20px;
-      font-size: 0.85rem;
+      font-size: clamp(0.75rem, 2vw, 0.85rem);
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      min-height: 44px; /* Minimum target area for mobile touch */
-      flex: 1;
-      max-width: 50%;
       transition: all 0.2s ease;
+      white-space: nowrap;
     }
     
-    .action-corner-btn:hover, .action-corner-btn:active {
+    .action-corner-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
     }
@@ -103,16 +100,17 @@
 
     .header h1 {
       margin: 0.25rem 0;
-      font-size: clamp(1.4rem, 6vw, 2.25rem);
+      font-size: clamp(1.35rem, 5vw, 2.25rem);
       color: #ffffff;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      line-height: 1.2;
     }
 
     .header h3 {
       margin: 0;
       color: var(--accent);
-      font-size: clamp(0.85rem, 3.5vw, 1.1rem);
+      font-size: clamp(0.85rem, 3vw, 1.1rem);
       text-transform: uppercase;
     }
 
@@ -121,7 +119,7 @@
       background: var(--surface);
       border: 1px solid var(--accent);
       border-radius: 12px;
-      padding: 1rem;
+      padding: clamp(0.85rem, 3vw, 1.25rem);
       margin-bottom: 1.5rem;
     }
 
@@ -129,19 +127,33 @@
       display: block; 
     }
 
+    /* Fully responsive form grid layout */
     .form-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 10px;
       margin-bottom: 10px;
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    .panel-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
     }
 
     .tournament-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 1rem;
-      margin-bottom: 1.25rem;
+      padding: clamp(1rem, 3vw, 1.25rem);
+      margin-bottom: 1.5rem;
     }
 
     .tournament-card-header {
@@ -150,13 +162,13 @@
       align-items: flex-start;
       gap: 10px;
       margin-bottom: 8px;
+      flex-wrap: wrap;
     }
 
     .tournament-card h4 {
       margin: 0;
-      font-size: 1.1rem;
+      font-size: clamp(1rem, 3vw, 1.2rem);
       color: #fff;
-      word-break: break-word;
     }
 
     .tournament-badge-row {
@@ -171,40 +183,44 @@
       color: var(--accent);
       padding: 4px 10px;
       border-radius: 12px;
-      font-size: 0.75rem;
+      font-size: clamp(0.7rem, 2vw, 0.8rem);
       font-weight: 600;
     }
 
-    /* 16px font-size prevents automated zoom-in on iOS Safari */
     .input-field, .select-field {
-      padding: 12px 10px;
+      padding: 10px 12px;
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 6px;
       color: var(--text);
-      font-size: 16px;
+      font-size: clamp(0.85rem, 2.5vw, 0.95rem);
       width: 100%;
-      min-height: 44px;
+      box-sizing: border-box;
+      min-height: 42px;
     }
 
-    input[type="datetime-local"]::-webkit-calendar-picker-indicator,
-    input[type="date"]::-webkit-calendar-picker-indicator {
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
       filter: invert(1);
       cursor: pointer;
     }
 
     .btn {
-      padding: 12px 14px;
+      padding: 10px 14px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       font-weight: bold;
       cursor: pointer;
-      font-size: 0.95rem;
-      min-height: 44px;
+      font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+      white-space: nowrap;
+      min-height: 42px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      touch-action: manipulation;
+      transition: opacity 0.2s ease;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
     }
 
     .btn-primary { background: var(--accent); color: #020617; }
@@ -215,88 +231,73 @@
       width: 100%; 
       overflow-x: auto; 
       margin-top: 1rem;
-      -webkit-overflow-scrolling: touch;
+      -webkit-overflow-scrolling: touch; 
     }
 
     .leaderboard { 
       width: 100%; 
       border-collapse: collapse; 
+      min-width: 320px;
     }
 
     .leaderboard th, .leaderboard td { 
-      padding: 10px 8px; 
+      padding: clamp(6px, 2vw, 10px); 
       text-align: left; 
-      font-size: 0.85rem;
+      font-size: clamp(0.8rem, 2vw, 0.9rem);
     }
 
     .leaderboard th { 
       border-bottom: 2px solid var(--border); 
       color: #64748b; 
-      font-size: 0.75rem; 
+      font-size: clamp(0.7rem, 2vw, 0.8rem); 
       text-transform: uppercase; 
     }
 
     .admin-col { display: none; text-align: right; }
     .admin-mode-active .admin-col { display: table-cell; }
 
+    /* Flexible Filter Bar */
     .filter-container {
       margin-bottom: 1.25rem;
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .filter-container label {
-      width: 100%;
-      font-size: 0.85rem;
+      font-size: clamp(0.8rem, 2.5vw, 0.9rem);
       color: #94a3b8;
       font-weight: 600;
     }
 
-    /* Mobile Adaptations */
-    @media (max-width: 600px) {
-      body {
-        padding: 0;
+    .filter-container select {
+      flex: 1;
+      min-width: 140px;
+    }
+
+    /* Small Screen Specific Adjustments */
+    @media (max-width: 480px) {
+      .top-actions {
+        flex-wrap: nowrap;
+      }
+      
+      .action-corner-btn span:last-child {
+        font-size: 0.75rem;
       }
 
-      .container {
-        border-radius: 0;
-        border: none;
-        box-shadow: none;
-        padding: 0.75rem;
-      }
-
-      .form-grid { 
-        grid-template-columns: 1fr; 
-      }
-
-      .form-grid > * {
-        grid-column: span 1 !important;
+      .form-grid {
+        grid-template-columns: 1fr;
       }
 
       .filter-container {
-        display: grid;
-        grid-template-columns: 1fr auto;
+        flex-direction: row;
+        align-items: center;
       }
 
-      .filter-container label {
-        grid-column: span 2;
-      }
-
-      .filter-container .select-field {
-        max-width: 100% !important;
-      }
-
-      /* Stack control buttons vertically inside mobile panels */
-      .admin-panel-header, .player-panel-header {
-        flex-direction: column;
-        align-items: flex-start !important;
-        gap: 10px;
-      }
-
-      .admin-panel-header .btn, .player-panel-header .btn {
-        width: 100%;
+      .filter-container select, 
+      .filter-container button {
+        width: auto;
       }
     }
   </style>
@@ -306,10 +307,10 @@
   <div class="container">
     <div class="top-actions">
       <button id="player-profile-btn" class="action-corner-btn" onclick="togglePlayerProfilePanel()">
-        <span>👤</span> <span>Account</span>
+        <span>👤</span> <span>Sign Up / Log In</span>
       </button>
       <button id="admin-toggle-btn" class="action-corner-btn" onclick="toggleAdminPrompt()">
-        <span>🔒</span> <span id="admin-btn-label">Admin</span>
+        <span>🔒</span> <span id="admin-btn-label">Admin Login</span>
       </button>
     </div>
 
@@ -321,7 +322,7 @@
 
     <!-- Player Profile Panel -->
     <div id="player-panel" class="player-panel">
-      <div class="player-panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div class="panel-header-row">
         <h4 style="color:var(--accent); margin:0;">👤 Account Setup</h4>
         <button class="btn btn-primary" onclick="togglePlayerProfilePanel()">Close</button>
       </div>
@@ -344,10 +345,10 @@
       <!-- Sign Up Form -->
       <form id="signup-form" onsubmit="handleSignUp(event)" style="display: none;">
         <div class="form-grid">
-          <input type="text" id="p-name" class="input-field" placeholder="First Name" required aria-label="First Name">
-          <input type="text" id="p-surname" class="input-field" placeholder="Surname" required aria-label="Surname">
-          <input type="email" id="p-email" class="input-field" placeholder="Email Address" required aria-label="Email Address">
-          <input type="password" id="p-password" class="input-field" placeholder="Password" minlength="6" required aria-label="Password">
+          <input type="text" id="p-name" class="input-field full-width" placeholder="First Name" required aria-label="First Name">
+          <input type="text" id="p-surname" class="input-field full-width" placeholder="Surname" required aria-label="Surname">
+          <input type="email" id="p-email" class="input-field full-width" placeholder="Email Address" required aria-label="Email Address">
+          <input type="password" id="p-password" class="input-field full-width" placeholder="Password" minlength="6" required aria-label="Password">
           
           <select id="p-gender" class="select-field" required aria-label="Gender">
             <option value="" disabled selected>Select Gender</option>
@@ -369,7 +370,7 @@
 
     <!-- Admin Panel -->
     <div id="admin-panel" class="admin-panel">
-      <div class="admin-panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div class="panel-header-row">
         <h4 style="color: var(--accent); margin: 0;">⚡ Create New Tournament</h4>
         <button type="button" class="btn btn-secondary" onclick="logoutAdmin()">Exit Admin Mode</button>
       </div>
@@ -379,7 +380,7 @@
           <input 
             type="text" 
             id="t-name" 
-            class="input-field" 
+            class="input-field full-width" 
             placeholder="Tournament Name (e.g. Ladies Night Special)" 
             required 
             aria-label="Tournament Name"
@@ -434,25 +435,25 @@
             aria-label="Entry Fee"
           >
 
-          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 0;">
-            <input type="checkbox" id="t-is-doubles" style="width: 20px; height: 20px; cursor: pointer;">
-            <label for="t-is-doubles" style="font-size: 0.95rem; color: var(--text); cursor: pointer;">Doubles Competition</label>
+          <div class="full-width" style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+            <input type="checkbox" id="t-is-doubles" style="width: 18px; height: 18px; cursor: pointer;">
+            <label for="t-is-doubles" style="font-size: 0.9rem; color: var(--text); cursor: pointer;">Doubles Competition</label>
           </div>
         </div>
 
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Publish Tournament</button>
       </form>
 
-      <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+      <hr style="border: 0; border-top: 1px solid var(--border); margin: 2rem 0 1.5rem 0;">
 
       <!-- Admin Refund Management Section -->
       <div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 8px;">
+        <div class="panel-header-row" style="margin-bottom: 0.5rem;">
           <h4 style="color: var(--gold); margin: 0; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">
-            💳 Refund Requests
+            💳 Pending & Processed Refunds
           </h4>
-          <button type="button" class="btn btn-secondary" onclick="loadRefundRequests()" style="padding: 6px 10px; font-size: 0.8rem;">
-            🔄 Refresh
+          <button type="button" class="btn btn-secondary" onclick="loadRefundRequests()" style="padding: 4px 10px; font-size: 0.8rem; min-height: 32px;">
+            🔄 Refresh List
           </button>
         </div>
         
