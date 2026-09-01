@@ -480,8 +480,8 @@ async function handleCreateTournament(event) {
   const targetGender = document.getElementById('t-target-gender')?.value;
   const isDoubles = document.getElementById('t-is-doubles')?.checked || false;
   
-  // Extract entry fee field value
-  const entryFeeInput = document.getElementById('t-entry-fee')?.value;
+  // Extract entry fee field value (FIXED ID MATCHING HTML)
+  const entryFeeInput = document.getElementById('t-entry')?.value;
   const entryFee = entryFeeInput ? parseFloat(entryFeeInput) : 0;
 
   const raceToText = `Race to ${raceNumber}`;
@@ -514,12 +514,23 @@ async function handleCreateTournament(event) {
 }
 
 // 5. Participant Actions
+// Add your Paystack Public Key here
+const PAYSTACK_PUBLIC_KEY = "pk_test_17655c4677eb0a914b9bf7557869ac2749f81744"; // Replace with your Paystack Public Key
+
+// Updated Signup / Payment Trigger Function
 async function handleSignup(e, tournamentId, isDoubles) {
   e.preventDefault();
 
   if (!currentSessionUser) {
     alert("You must be logged in to register for a tournament.");
     togglePlayerProfilePanel();
+    return;
+  }
+
+  // Find the tournament details
+  const tournament = tournamentsData.find(t => t.id === tournamentId);
+  if (!tournament) {
+    alert("Tournament not found.");
     return;
   }
 
@@ -534,12 +545,77 @@ async function handleSignup(e, tournamentId, isDoubles) {
     }
   }
 
+  const entryFee = tournament.entry_fee || 0;
+
+  // Case A: Free Tournament -> Direct Database Entry
+  if (entryFee <= 0) {
+    await completeRegistration({
+      tournamentId,
+      profileId: currentSessionUser.id,
+      partnerName,
+      paymentStatus: 'free',
+      reference: `FREE-${Date.now()}`
+    });
+    return;
+  }
+
+  // Case B: Paid Tournament -> Launch Paystack Gateway
+  payWithPaystack({
+    amount: entryFee,
+    email: currentSessionUser.email,
+    tournamentId: tournamentId,
+    partnerName: partnerName
+  });
+}
+
+// Paystack Gateway Handler
+function payWithPaystack({ amount, email, tournamentId, partnerName }) {
+  const reference = `BB-${tournamentId.substring(0, 5)}-${Date.now()}`;
+
+  const handler = PaystackPop.setup({
+    key: PAYSTACK_PUBLIC_KEY,
+    email: email,
+    amount: amount * 100, // Paystack expects amount in cents (kobo/cents)
+    currency: 'ZAR',
+    ref: reference,
+    metadata: {
+      custom_fields: [
+        { display_name: "Player Name", variable_name: "player_name", value: currentSessionUser.player_name },
+        { display_name: "Tournament ID", variable_name: "tournament_id", value: tournamentId }
+      ]
+    },
+    callback: async function(response) {
+      // Payment Successful
+      alert(`Payment successful! Reference: ${response.reference}`);
+      
+      await completeRegistration({
+        tournamentId,
+        profileId: currentSessionUser.id,
+        partnerName,
+        paymentStatus: 'paid',
+        reference: response.reference,
+        amount: amount
+      });
+    },
+    onClose: function() {
+      alert('Payment window closed. Registration was not completed.');
+    }
+  });
+
+  handler.openIframe();
+}
+
+// Complete Database Insertion after successful payment
+async function completeRegistration({ tournamentId, profileId, partnerName, paymentStatus, reference, amount = 0 }) {
   const { error } = await supabaseClient
     .from('registrations')
     .insert([{ 
       tournament_id: tournamentId, 
-      profile_id: currentSessionUser.id,
-      partner_name: partnerName
+      profile_id: profileId,
+      partner_name: partnerName,
+      payment_status: paymentStatus,
+      payment_reference: reference,
+      paid_amount: amount
     }]);
 
   if (error) {
@@ -547,9 +623,10 @@ async function handleSignup(e, tournamentId, isDoubles) {
     if (error.code === '23505' || (error.message && error.message.includes('unique constraint'))) {
       alert("You are already registered for this tournament.");
     } else {
-      alert("Failed to join: " + error.message);
+      alert("Failed to complete registration: " + error.message);
     }
   } else {
+    alert("Successfully registered for the tournament!");
     await loadTournaments();
   }
 }
