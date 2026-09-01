@@ -74,7 +74,7 @@ async function handleSignUp(event) {
     return;
   }
 
-  // 1. Check if the email already exists in the database
+  // Check if the email already exists in the database
   const { data: existingUser, error: checkError } = await supabaseClient
     .from('profiles')
     .select('id')
@@ -90,10 +90,10 @@ async function handleSignUp(event) {
     return;
   }
 
-  // 2. Hash password before sending to database
+  // Hash password before sending to database
   const hashedPassword = await hashPassword(password);
 
-  // 3. Insert new user profile
+  // Insert new user profile
   const { data, error } = await supabaseClient
     .from('profiles')
     .insert([
@@ -136,7 +136,6 @@ async function handleLogIn(event) {
     return;
   }
 
-  // Hash password to match database record
   const hashedPassword = await hashPassword(password);
 
   const { data, error } = await supabaseClient
@@ -179,7 +178,6 @@ function setSessionUser(user) {
     switchAuthTab('signup');
   }
 
-  // Re-render tournaments view to update action buttons dynamically
   renderTournaments();
 }
 
@@ -190,7 +188,6 @@ function handleLogOut() {
   togglePlayerProfilePanel();
 }
 
-// Fetch all profiles to populate dropdowns when needed
 async function fetchProfiles() {
   const { data, error } = await supabaseClient
     .from('profiles')
@@ -204,7 +201,6 @@ async function fetchProfiles() {
   }
 }
 
-// Fetch Tournaments, Entries, and Joined Profiles
 async function loadTournaments() {
   const container = document.getElementById('tournaments-container');
   if (!container) return;
@@ -236,7 +232,6 @@ async function loadTournaments() {
   renderTournaments();
 }
 
-// Helper to format ISO dates cleanly
 function formatTournamentDate(isoString) {
   if (!isoString) return 'Date TBD';
   const date = new Date(isoString);
@@ -250,7 +245,6 @@ function formatTournamentDate(isoString) {
   }).format(date); 
 }
 
-// Helper to calculate date grouping category
 function getDateCategory(isoString) {
   if (!isoString) return 'Upcoming';
   
@@ -263,7 +257,7 @@ function getDateCategory(isoString) {
   const diffTime = eventDay - today;
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
- if (diffDays < 0) return 'Past Events';
+  if (diffDays < 0) return 'Past Events';
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Tomorrow';
   if (diffDays > 1 && diffDays <= 7) return 'This Week';
@@ -271,7 +265,6 @@ function getDateCategory(isoString) {
   return 'Later';
 }
 
-// Clear date filter helper
 function clearDateFilter() {
   const filterInput = document.getElementById('date-filter');
   if (filterInput) {
@@ -349,15 +342,18 @@ function renderTournaments() {
         const targetGender = t.target_gender || 'All';
         const genderBadgeText = targetGender === 'All' ? 'Open' : `${targetGender} Only`;
         const isDoubles = t.is_doubles || false;
+        
+        // Format entry fee badge text
+        const entryFeeText = (t.entry_fee !== null && t.entry_fee !== undefined && t.entry_fee > 0) 
+          ? `$${t.entry_fee}` 
+          : 'Free';
 
-        // Determine session registration & gender eligibility
         const userRegistration = currentSessionUser 
           ? entries.find(e => e.profiles?.id === currentSessionUser.id)
           : null;
 
         const isGenderEligible = !currentSessionUser || targetGender === 'All' || currentSessionUser.gender === targetGender;
 
-        // Dynamic Registration Action Bar
         let actionAreaHtml = '';
         if (!currentSessionUser) {
           actionAreaHtml = `
@@ -404,6 +400,7 @@ function renderTournaments() {
             <div class="tournament-badge-row">
               <span class="badge" style="background: var(--gold); color: #000;">${isDoubles ? '👥 Doubles' : '👤 Singles'}</span>
               <span class="badge" style="background: var(--gold); color: #000;">Division: ${escapeHtml(genderBadgeText)}</span>
+              <span class="badge" style="background: #22c55e; color: #000; font-weight: bold;">💵 Fee: R ${entryFeeText}</span>
               <span class="badge">Game: ${escapeHtml(t.game_type || '')}</span>
               <span class="badge">Format: ${escapeHtml(t.format || '')}</span>
               <span class="badge">${escapeHtml(t.race_to || '')}</span>
@@ -482,6 +479,11 @@ async function handleCreateTournament(event) {
   const format = document.getElementById('t-format')?.value;
   const targetGender = document.getElementById('t-target-gender')?.value;
   const isDoubles = document.getElementById('t-is-doubles')?.checked || false;
+  
+  // Extract entry fee field value
+  const entryFeeInput = document.getElementById('t-entry-fee')?.value;
+  const entryFee = entryFeeInput ? parseFloat(entryFeeInput) : 0;
+
   const raceToText = `Race to ${raceNumber}`;
 
   const { data: createdTournament, error } = await supabaseClient
@@ -494,7 +496,8 @@ async function handleCreateTournament(event) {
         race_to: raceToText, 
         format: format,
         target_gender: targetGender,
-        is_doubles: isDoubles
+        is_doubles: isDoubles,
+        entry_fee: entryFee
       }
     ])
     .select()
@@ -602,10 +605,7 @@ function logoutAdmin() {
 
 function togglePlayerProfilePanel() {
   const panel = document.getElementById('player-panel');
-  panel.classList.toggle('visible');
-  
-  // Always reset view to log in form when opening
-  if (panel.classList.contains('visible')) {
-    switchAuthTab('login');
+  if (panel) {
+    panel.classList.toggle('visible');
   }
 }
