@@ -345,8 +345,8 @@ function renderTournaments() {
         
         // Format entry fee badge text
         const entryFeeText = (t.entry_fee !== null && t.entry_fee !== undefined && t.entry_fee > 0) 
-          ? `$${t.entry_fee}` 
-          : 'Free';
+          ? `R${t.entry_fee}` 
+          : 'FREE ENTRY';
 
         const userRegistration = currentSessionUser 
           ? entries.find(e => e.profiles?.id === currentSessionUser.id)
@@ -400,7 +400,7 @@ function renderTournaments() {
             <div class="tournament-badge-row">
               <span class="badge" style="background: var(--gold); color: #000;">${isDoubles ? '👥 Doubles' : '👤 Singles'}</span>
               <span class="badge" style="background: var(--gold); color: #000;">Division: ${escapeHtml(genderBadgeText)}</span>
-              <span class="badge" style="background: #22c55e; color: #000; font-weight: bold;">💵 Fee: R${entryFeeText}</span>
+              <span class="badge" style="background: #22c55e; color: #000; font-weight: bold;">💵 Fee: ${entryFeeText}</span>
               <span class="badge">Game: ${escapeHtml(t.game_type || '')}</span>
               <span class="badge">Format: ${escapeHtml(t.format || '')}</span>
               <span class="badge">${escapeHtml(t.race_to || '')}</span>
