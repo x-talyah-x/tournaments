@@ -173,6 +173,7 @@ async function loadTournaments() {
       registrations (
         id,
         created_at,
+        partner_name,
         profiles (
           id,
           player_name,
@@ -426,7 +427,7 @@ async function handleCreateTournament(event) {
   const raceNumber = parseInt(document.getElementById('t-race')?.value, 10);
   const format = document.getElementById('t-format')?.value;
   const targetGender = document.getElementById('t-target-gender')?.value;
-
+  const isDoubles = document.getElementById('t-is-doubles')?.checked || false;
   const raceToText = `Race to ${raceNumber}`;
 
   // 1. Insert Tournament into Supabase
@@ -439,7 +440,8 @@ async function handleCreateTournament(event) {
         game_type: gameType, 
         race_to: raceToText, 
         format: format,
-        target_gender: targetGender
+        target_gender: targetGender,
+        is_doubles: isDoubles
       }
     ])
     .select()
@@ -483,7 +485,7 @@ async function handleCreateTournament(event) {
 }
 
 // 5. Participant Actions (Only active user session)
-async function handleSignup(e, tournamentId) {
+async function handleSignup(e, tournamentId, isDoubles) {
   e.preventDefault();
 
   if (!currentSessionUser) {
@@ -492,11 +494,23 @@ async function handleSignup(e, tournamentId) {
     return;
   }
 
+  let partnerName = null;
+  if (isDoubles) {
+    const inputField = document.getElementById(`partner-input-${tournamentId}`);
+    partnerName = inputField?.value.trim();
+
+    if (!partnerName) {
+      alert("Please enter your partner's name for doubles.");
+      return;
+    }
+  }
+
   const { error } = await supabaseClient
     .from('registrations')
     .insert([{ 
       tournament_id: tournamentId, 
-      profile_id: currentSessionUser.id 
+      profile_id: currentSessionUser.id,
+      partner_name: partnerName
     }]);
 
   if (error) {
