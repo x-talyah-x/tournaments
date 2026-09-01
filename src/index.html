@@ -289,81 +289,97 @@
       </div>
     </div>
 
-    <!-- Admin Panel -->
  <!-- Admin Panel -->
-<div id="admin-panel" class="admin-panel">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    <h4 style="color: var(--accent); margin: 0;">⚡ Create New Tournament</h4>
-    <button type="button" class="btn btn-secondary" onclick="logoutAdmin()">Exit Admin Mode</button>
-  </div>
+    <div id="admin-panel" class="admin-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h4 style="color: var(--accent); margin: 0;">⚡ Create New Tournament</h4>
+        <button type="button" class="btn btn-secondary" onclick="logoutAdmin()">Exit Admin Mode</button>
+      </div>
 
-  <form onsubmit="handleCreateTournament(event)">
-    <div class="form-grid">
-      <input 
-        type="text" 
-        id="t-name" 
-        class="input-field" 
-        placeholder="Tournament Name (e.g. Ladies Night Special)" 
-        required 
-        style="grid-column: span 2;"
-      >
+      <form onsubmit="handleCreateTournament(event)">
+        <div class="form-grid">
+          <input 
+            type="text" 
+            id="t-name" 
+            class="input-field" 
+            placeholder="Tournament Name (e.g. Ladies Night Special)" 
+            required 
+            style="grid-column: span 2;"
+          >
 
-      <input 
-        type="datetime-local" 
-        id="t-date" 
-        class="input-field" 
-        required
-      >
+          <input 
+            type="datetime-local" 
+            id="t-date" 
+            class="input-field" 
+            required
+          >
 
-      <select id="t-game" class="select-field" required>
-        <option value="Blackball">Blackball</option>
-        <option value="8 Ball">8 Ball</option>
-        <option value="9 Ball">9 Ball</option>
-        <option value="Heyball">Heyball</option>
-        <option value="Ultimate Pool">Ultimate Pool</option>
-      </select>
+          <select id="t-game" class="select-field" required>
+            <option value="Blackball">Blackball</option>
+            <option value="8 Ball">8 Ball</option>
+            <option value="9 Ball">9 Ball</option>
+            <option value="Heyball">Heyball</option>
+            <option value="Ultimate Pool">Ultimate Pool</option>
+          </select>
 
-      <input 
-        type="number" 
-        id="t-race" 
-        class="input-field" 
-        placeholder="Race To (e.g. 5)" 
-        min="1" 
-        step="1" 
-        required
-      >
+          <input 
+            type="number" 
+            id="t-race" 
+            class="input-field" 
+            placeholder="Race To (e.g. 5)" 
+            min="1" 
+            step="1" 
+            required
+          >
 
-      <select id="t-format" class="select-field" required>
-        <option value="Knockouts">Knockouts</option>
-        <option value="Round Robin">Round Robin</option>
-      </select>
+          <select id="t-format" class="select-field" required>
+            <option value="Knockouts">Knockouts</option>
+            <option value="Round Robin">Round Robin</option>
+          </select>
 
-      <!-- Target Gender and Entry Fee grouped into the same row -->
-      <select id="t-target-gender" class="select-field" required>
-        <option value="All">Open / All Genders</option>
-        <option value="Female">Female Only (Ladies)</option>
-        <option value="Male">Male Only (Mens)</option>
-      </select>
+          <!-- Target Gender and Entry Fee grouped into the same row -->
+          <select id="t-target-gender" class="select-field" required>
+            <option value="All">Open / All Genders</option>
+            <option value="Female">Female Only (Ladies)</option>
+            <option value="Male">Male Only (Mens)</option>
+          </select>
 
-      <input 
-        type="number" 
-        id="t-entry" 
-        class="input-field" 
-        placeholder="Entry Fee (R)" 
-        min="1" 
-        step="1" 
-        required
-      >
+          <input 
+            type="number" 
+            id="t-entry" 
+            class="input-field" 
+            placeholder="Entry Fee (R)" 
+            min="0" 
+            step="1" 
+            required
+          >
 
-      <div style="grid-column: span 2; display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-        <input type="checkbox" id="t-is-doubles" style="width: 18px; height: 18px; cursor: pointer;">
-        <label for="t-is-doubles" style="font-size: 0.9rem; color: var(--text); cursor: pointer;">Doubles Competition</label>
+          <div style="grid-column: span 2; display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+            <input type="checkbox" id="t-is-doubles" style="width: 18px; height: 18px; cursor: pointer;">
+            <label for="t-is-doubles" style="font-size: 0.9rem; color: var(--text); cursor: pointer;">Doubles Competition</label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Publish Tournament</button>
+      </form>
+
+      <hr style="border: 0; border-top: 1px solid var(--border); margin: 2rem 0 1.5rem 0;">
+
+      <!-- Admin Refund Management Section -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h4 style="color: var(--gold); margin: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.5px;">
+            💳 Pending & Processed Refunds
+          </h4>
+          <button type="button" class="btn btn-secondary" onclick="loadRefundRequests()" style="padding: 4px 10px; font-size: 0.8rem;">
+            🔄 Refresh List
+          </button>
+        </div>
+        
+        <!-- Table container dynamically populated by server.js -->
+        <div id="admin-refunds-container"></div>
       </div>
     </div>
-
-    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Publish Tournament</button>
-  </form>
-</div>
 
     <!-- Date Filter Control -->
     <div class="filter-container">
