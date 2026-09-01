@@ -148,7 +148,6 @@ async function handleLogIn(event) {
   if (error || !data) {
     alert("Invalid email or password.");
   } else {
-    alert(`Welcome back, ${data.player_name}!`);
     event.target.reset();
     setSessionUser(data);
     togglePlayerProfilePanel();
@@ -507,8 +506,6 @@ async function handleCreateTournament(event) {
     alert('Error publishing tournament: ' + error.message);
     return;
   }
-
-  alert("Tournament created successfully!");
   event.target.reset();
   await loadTournaments();
 }
@@ -631,7 +628,6 @@ async function completeRegistration({ tournamentId, profileId, partnerName, paym
       alert("Failed to complete registration: " + error.message);
     }
   } else {
-    alert("Successfully registered for the tournament!");
     await loadTournaments();
   }
 }
@@ -781,12 +777,6 @@ async function loadRefundRequests() {
             style="padding: 3px 8px; font-size: 0.75rem; background: var(--success);"
             onclick="updateRefundStatus('${req.id}', 'completed')">
             ✓ Paid
-          </button>
-          <button 
-            class="btn btn-danger" 
-            style="padding: 3px 8px; font-size: 0.75rem;"
-            onclick="updateRefundStatus('${req.id}', 'rejected')">
-            ✕
           </button>
         </td>
       </tr>
