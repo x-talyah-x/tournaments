@@ -402,6 +402,7 @@ function renderTournaments() {
 }
 
 // 4. Admin Actions
+// 4. Admin Actions (Updated to include notification dispatch)
 async function handleCreateTournament(event) {
   event.preventDefault();
 
@@ -428,7 +429,8 @@ async function handleCreateTournament(event) {
 
   const raceToText = `Race to ${raceNumber}`;
 
-  const { error } = await supabaseClient
+  // 1. Insert Tournament into Supabase
+  const { data: createdTournament, error } = await supabaseClient
     .from('tournaments')
     .insert([
       { 
@@ -439,25 +441,45 @@ async function handleCreateTournament(event) {
         format: format,
         target_gender: targetGender
       }
-    ]);
+    ])
+    .select()
+    .single();
 
   if (error) {
     alert('Error publishing tournament: ' + error.message);
-  } else {
-    event.target.reset();
-    await loadTournaments();
+    return;
   }
-}
 
-async function deleteTournament(id) {
-  if (confirm("Are you sure you want to delete this tournament and all its entries?")) {
-    const { error } = await supabaseClient
-      .from('tournaments')
-      .delete()
-      .eq('id', id);
+  // 2. Query users who opted in for email notifications
+  const { data: notifiedUsers, error: userError } = await supabaseClient
+    .from('profiles')
+    .select('email, player_name')
+    .eq('notifications_enabled', true); // Assumes boolean column name 'notifications_enabled'
 
-    if (!error) await loadTournaments();
+  if (!userError && notifiedUsers && notifiedUsers.length > 0) {
+    // 3. Trigger Email Dispatch via Supabase Edge Function
+    try {
+      await supabaseClient.functions.invoke('send-tournament-email', {
+        body: {
+          recipients: notifiedUsers,
+          tournament: {
+            name: name,
+            event_date: formatTournamentDate(eventDate),
+            game_type: gameType,
+            format: format,
+            race_to: raceToText
+          }
+        }
+      });
+      console.log(`Notification request sent for ${notifiedUsers.length} users.`);
+    } catch (notifyErr) {
+      console.error("Failed to trigger email notifications:", notifyErr);
+    }
   }
+
+  alert("Tournament created successfully!");
+  event.target.reset();
+  await loadTournaments();
 }
 
 // 5. Participant Actions (Only active user session)
