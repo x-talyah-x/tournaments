@@ -646,62 +646,23 @@ async function removeParticipant(entryId, targetProfileId = null) {
 
   if (!confirm("Are you sure you want to cancel this registration?")) return;
 
-  // 1. Fetch registration details along with profile and tournament info
-  const { data: registration, error: fetchErr } = await supabaseClient
-    .from('registrations')
-    .select(`
-      id,
-      payment_status,
-      payment_reference,
-      paid_amount,
-      profiles (
-        player_name,
-        email
-      ),
-      tournaments (
-        name,
-        game_type
-      )
-    `)
-    .eq('id', entryId)
-    .single();
+  const response = await fetch('/api/registrations/cancel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      entryId: entryId,
+      userId: currentSessionUser?.id,
+      isAdmin: isAdmin
+    })
+  });
 
-  if (fetchErr || !registration) {
-    alert("Could not fetch registration details.");
-    return;
-  }
+  const result = await response.json();
 
-  // 2. If registration was paid, log it in the refund_requests table
-  if (registration.payment_status === 'paid' && registration.paid_amount > 0) {
-    const tournamentTitle = registration.tournaments?.name || registration.tournaments?.game_type || 'Unknown Event';
-    const playerName = registration.profiles?.player_name || currentSessionUser?.player_name || 'Unknown';
-    const playerEmail = registration.profiles?.email || currentSessionUser?.email || 'N/A';
-
-    const { error: refundLogErr } = await supabaseClient
-      .from('refund_requests')
-      .insert([{
-      registration_id: registrationId, // Links directly to registrations
-      amount: refundAmount,
-      }]);
-
-    if (refundLogErr) {
-      alert("Failed to record refund request: " + refundLogErr.message);
-      return;
-    }
-  }
-
-  // 3. Remove registration record from Supabase
-  const { error: deleteError } = await supabaseClient
-    .from('registrations')
-    .delete()
-    .eq('id', entryId);
-
-  if (deleteError) {
-    alert("Failed to remove registration: " + deleteError.message);
-  } else {
-    alert("Registration canceled successfully." + (registration.payment_status === 'paid' ? " Your refund request has been logged for admin payout." : ""));
+  if (response.ok) {
+    alert(result.message + (result.refundLogged ? " Your refund request has been logged." : ""));
     await loadTournaments();
-    if (isAdmin) await loadRefundRequests(); // Refresh admin list if in admin view
+  } else {
+    alert("Failed: " + result.error);
   }
 }
 
