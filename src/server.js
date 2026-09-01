@@ -945,3 +945,45 @@ async function deleteTournament(tournamentId) {
     }
   }
 }
+
+// Sync notification checkbox state when user logs in
+async function loadUserProfile(userId) {
+  const { data: profile, error } = await supabaseClient
+    .from('profiles')
+    .select('notifications_enabled')
+    .eq('id', userId)
+    .single();
+
+  if (error) {
+    console.error('Error fetching profile settings:', error.message);
+    return;
+  }
+
+  const notifCheckbox = document.getElementById('p-notifications');
+  if (notifCheckbox && profile) {
+    notifCheckbox.checked = profile.notifications_enabled || false;
+  }
+}
+
+// Save notification setting updates to Supabase
+async function handleToggleNotifications(isEnabled) {
+  const user = supabaseClient.auth.getUser();
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (!session?.user) {
+    alert("You must be logged in to change notification settings.");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from('profiles')
+    .update({ notifications_enabled: isEnabled })
+    .eq('id', session.user.id);
+
+  if (error) {
+    alert('Failed to update notification settings: ' + error.message);
+    // Revert checkbox state on error
+    document.getElementById('p-notifications').checked = !isEnabled;
+  }
+}
+
