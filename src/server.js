@@ -15,6 +15,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadTournaments();
 });
 
+// Helper to hash passwords securely using SHA-256 (Web Crypto API)
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // Helper to sanitize HTML strings to prevent XSS
 function escapeHtml(str) {
   if (!str) return '';
@@ -49,7 +58,7 @@ function switchAuthTab(tab) {
   }
 }
 
-// 1. REGISTER PROFILE
+// 1. REGISTER PROFILE (With Password Hashing)
 async function handleSignUp(event) {
   event.preventDefault();
 
@@ -59,13 +68,38 @@ async function handleSignUp(event) {
   const gender = document.getElementById('p-gender')?.value;
   const dob = document.getElementById('p-dob')?.value;
 
+  if (!email || !password) {
+    alert("Please enter a valid email and password.");
+    return;
+  }
+
+  // 1. Check if the email already exists in the database
+  const { data: existingUser, error: checkError } = await supabaseClient
+    .from('profiles')
+    .select('id')
+    .ilike('email', email)
+    .maybeSingle();
+
+  if (checkError) {
+    console.error("Error checking existing user:", checkError);
+  }
+
+  if (existingUser) {
+    alert("A user with this email address is already registered.");
+    return;
+  }
+
+  // 2. Hash password before sending to database
+  const hashedPassword = await hashPassword(password);
+
+  // 3. Insert new user profile
   const { data, error } = await supabaseClient
     .from('profiles')
     .insert([
       { 
         player_name: playerName,
         email: email,
-        password: password,
+        password: hashedPassword,
         gender: gender, 
         dob: dob
       }
@@ -74,7 +108,7 @@ async function handleSignUp(event) {
 
   if (error) {
     if (error.code === '23505' || (error.message && error.message.includes('unique constraint'))) {
-      alert("A user with this email already exists.");
+      alert("A user with this email address already exists.");
     } else {
       alert("Error saving profile: " + error.message);
     }
@@ -89,18 +123,26 @@ async function handleSignUp(event) {
   }
 }
 
-// 2. LOG IN
+// 2. LOG IN (With Password Hashing)
 async function handleLogIn(event) {
   event.preventDefault();
 
   const email = document.getElementById('login-email')?.value.trim();
   const password = document.getElementById('login-password')?.value;
 
+  if (!email || !password) {
+    alert("Please fill in both email and password.");
+    return;
+  }
+
+  // Hash password to match database record
+  const hashedPassword = await hashPassword(password);
+
   const { data, error } = await supabaseClient
     .from('profiles')
     .select('*')
     .eq('email', email)
-    .eq('password', password)
+    .eq('password', hashedPassword)
     .maybeSingle();
 
   if (error || !data) {
@@ -412,7 +454,8 @@ function renderTournaments() {
 
   container.innerHTML = htmlContent;
 }
-// 4. Admin Actions (Updated to include notification dispatch)
+
+// 4. Admin Actions
 async function handleCreateTournament(event) {
   event.preventDefault();
 
@@ -439,7 +482,6 @@ async function handleCreateTournament(event) {
   const isDoubles = document.getElementById('t-is-doubles')?.checked || false;
   const raceToText = `Race to ${raceNumber}`;
 
-  // 1. Insert Tournament into Supabase
   const { data: createdTournament, error } = await supabaseClient
     .from('tournaments')
     .insert([
@@ -461,39 +503,12 @@ async function handleCreateTournament(event) {
     return;
   }
 
-  // // 2. Query users who opted in for email notifications
-  // const { data: notifiedUsers, error: userError } = await supabaseClient
-  //   .from('profiles')
-  //   .select('email, player_name')
-  //   .eq('notifications', true); // Assumes boolean column name 'notifications_enabled'
-
-  // if (!userError && notifiedUsers && notifiedUsers.length > 0) {
-  //   // 3. Trigger Email Dispatch via Supabase Edge Function
-  //   try {
-  //     await supabaseClient.functions.invoke('send-tournament-email', {
-  //       body: {
-  //         recipients: notifiedUsers,
-  //         tournament: {
-  //           name: name,
-  //           event_date: formatTournamentDate(eventDate),
-  //           game_type: gameType,
-  //           format: format,
-  //           race_to: raceToText
-  //         }
-  //       }
-  //     });
-  //     console.log(`Notification request sent for ${notifiedUsers.length} users.`);
-  //   } catch (notifyErr) {
-  //     console.error("Failed to trigger email notifications:", notifyErr);
-  //   }
-  // }
-
   alert("Tournament created successfully!");
   event.target.reset();
   await loadTournaments();
 }
 
-// 5. Participant Actions (Only active user session)
+// 5. Participant Actions
 async function handleSignup(e, tournamentId, isDoubles) {
   e.preventDefault();
 
