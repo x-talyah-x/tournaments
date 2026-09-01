@@ -726,9 +726,11 @@ async function loadRefundRequests() {
 
   container.innerHTML = `<p style="color: #94a3b8; font-size: 0.85rem;">Loading refund requests...</p>`;
 
+  // Filter query to only fetch 'pending' status rows
   const { data: requests, error } = await supabaseClient
     .from('refund_requests')
     .select('*')
+    .eq('status', 'pending')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -737,7 +739,7 @@ async function loadRefundRequests() {
   }
 
   if (!requests || requests.length === 0) {
-    container.innerHTML = `<p style="color: #64748b; font-size: 0.85rem;">No pending or historical refund requests found.</p>`;
+    container.innerHTML = `<p style="color: #64748b; font-size: 0.85rem;">No unpaid refund requests found.</p>`;
     return;
   }
 
@@ -761,11 +763,7 @@ async function loadRefundRequests() {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
-    const statusBadge = req.status === 'pending'
-      ? `<span class="badge" style="background:#854d0e; color:#fef08a;">Pending</span>`
-      : req.status === 'completed'
-      ? `<span class="badge" style="background:#166534; color:#86efac;">Processed</span>`
-      : `<span class="badge" style="background:#991b1b; color:#fca5a5;">Rejected</span>`;
+    const statusBadge = `<span class="badge" style="background:#854d0e; color:#fef08a;">Pending</span>`;
 
     html += `
       <tr>
@@ -778,20 +776,18 @@ async function loadRefundRequests() {
         <td style="color: var(--gold); font-weight: bold;">R${parseFloat(req.amount).toFixed(2)}</td>
         <td>${statusBadge}</td>
         <td style="text-align: right;">
-          ${req.status === 'pending' ? `
-            <button 
-              class="btn btn-primary" 
-              style="padding: 3px 8px; font-size: 0.75rem; background: var(--success);"
-              onclick="updateRefundStatus('${req.id}', 'completed')">
-              ✓ Paid
-            </button>
-            <button 
-              class="btn btn-danger" 
-              style="padding: 3px 8px; font-size: 0.75rem;"
-              onclick="updateRefundStatus('${req.id}', 'rejected')">
-              ✕
-            </button>
-          ` : `<span style="color: #64748b; font-size: 0.75rem;">Done</span>`}
+          <button 
+            class="btn btn-primary" 
+            style="padding: 3px 8px; font-size: 0.75rem; background: var(--success);"
+            onclick="updateRefundStatus('${req.id}', 'completed')">
+            ✓ Paid
+          </button>
+          <button 
+            class="btn btn-danger" 
+            style="padding: 3px 8px; font-size: 0.75rem;"
+            onclick="updateRefundStatus('${req.id}', 'rejected')">
+            ✕
+          </button>
         </td>
       </tr>
     `;
@@ -800,7 +796,6 @@ async function loadRefundRequests() {
   html += `</tbody></table></div>`;
   container.innerHTML = html;
 }
-
 // Update the status of a refund request (Mark as Paid/Rejected)
 async function updateRefundStatus(refundId, newStatus) {
   const actionText = newStatus === 'completed' ? 'mark as PROCESSED / PAID' : 'REJECT';
