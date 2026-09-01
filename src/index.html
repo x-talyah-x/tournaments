@@ -342,7 +342,7 @@
     <div id="player-panel" class="player-panel">
       <div class="panel-header-row">
         <h4 style="color:var(--accent); margin:0;">👤 Account Setup</h4>
-        <button class="btn btn-primary" onclick="togglePlayerProfilePanel()">Close</button>
+        <button type="button" class="btn btn-primary" onclick="togglePlayerProfilePanel()">Close</button>
       </div>
 
       <!-- Auth Mode Switcher -->
@@ -379,20 +379,21 @@
         <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Create Profile</button>
       </form>
 
-    <!-- User Status Header -->
-    <div id="auth-user-status" style="margin-top: 1rem; text-align: center; display: none;">
-      <p style="color: var(--success); font-size: 0.9rem;" id="logged-in-user-text"></p>
-    
-      <!-- Notification Preference Toggle -->
-      <div style="display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 12px;">
-        <label for="p-notifications" style="font-size: 0.9rem; color: var(--text); cursor: pointer;">
-          🔔 Enable Notifications
-        </label>
-        <input type="checkbox" id="p-notifications" style="width: 18px; height: 18px; cursor: pointer;" onchange="handleToggleNotifications(this.checked)">
+      <!-- User Status Header -->
+      <div id="auth-user-status" style="margin-top: 1rem; text-align: center; display: none;">
+        <p style="color: var(--success); font-size: 0.9rem;" id="logged-in-user-text"></p>
+        
+        <!-- Notification Preference Toggle -->
+        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 12px;">
+          <label for="p-notifications" style="font-size: 0.9rem; color: var(--text); cursor: pointer;">
+            🔔 Enable Notifications
+          </label>
+          <input type="checkbox" id="p-notifications" style="width: 18px; height: 18px; cursor: pointer;" onchange="handleToggleNotifications(this.checked)">
+        </div>
+        
+        <button type="button" class="btn btn-danger" onclick="handleLogOut()" style="width: 100%;">Log Out</button>
       </div>
-    
-      <button class="btn btn-danger" onclick="handleLogOut()" style="width: 100%;">Log Out</button>
-    </div>
+    </div> <!-- Added missing closing tag for #player-panel -->
 
     <!-- Admin Panel -->
     <div id="admin-panel" class="admin-panel">
@@ -497,7 +498,7 @@
         <option value="this_week">This Week</option>
         <option value="this_month">This Month</option>
       </select>
-      <button class="btn btn-secondary" onclick="clearDateFilter()">Clear</button>
+      <button type="button" class="btn btn-secondary" onclick="clearDateFilter()">Clear</button>
     </div>
 
     <!-- Active Tournaments List -->
