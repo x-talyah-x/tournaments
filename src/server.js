@@ -572,10 +572,29 @@ async function handleSignup(e, tournamentId, isDoubles) {
 function payWithPaystack({ amount, email, tournamentId, partnerName }) {
   const reference = `BB-${tournamentId.substring(0, 5)}-${Date.now()}`;
 
+  // Dedicated callback handler function
+  function handlePaystackSuccess(response) {
+    alert(`Payment successful! Reference: ${response.reference}`);
+    
+    completeRegistration({
+      tournamentId: tournamentId,
+      profileId: currentSessionUser.id,
+      partnerName: partnerName,
+      paymentStatus: 'paid',
+      reference: response.reference,
+      amount: amount
+    });
+  }
+
+  // Dedicated onClose handler function
+  function handlePaystackClose() {
+    alert('Payment window closed. Registration was not completed.');
+  }
+
   const handler = PaystackPop.setup({
     key: PAYSTACK_PUBLIC_KEY,
     email: email,
-    amount: amount * 100, // Paystack expects amount in cents (kobo/cents)
+    amount: Math.round(amount * 100), // Ensures exact integer for cents
     currency: 'ZAR',
     ref: reference,
     metadata: {
@@ -584,22 +603,8 @@ function payWithPaystack({ amount, email, tournamentId, partnerName }) {
         { display_name: "Tournament ID", variable_name: "tournament_id", value: tournamentId }
       ]
     },
-    callback: async function(response) {
-      // Payment Successful
-      alert(`Payment successful! Reference: ${response.reference}`);
-      
-      await completeRegistration({
-        tournamentId,
-        profileId: currentSessionUser.id,
-        partnerName,
-        paymentStatus: 'paid',
-        reference: response.reference,
-        amount: amount
-      });
-    },
-    onClose: function() {
-      alert('Payment window closed. Registration was not completed.');
-    }
+    callback: handlePaystackSuccess,
+    onClose: handlePaystackClose
   });
 
   handler.openIframe();
