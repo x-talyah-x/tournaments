@@ -636,6 +636,9 @@ async function completeRegistration({ tournamentId, profileId, partnerName, paym
   }
 }
 
+// ==========================================
+// 1. CANCELLATION & REFUND LOGGING
+// ==========================================
 async function removeParticipant(entryId, targetProfileId = null) {
   const isOwner = currentSessionUser && targetProfileId && currentSessionUser.id === targetProfileId;
 
@@ -646,7 +649,7 @@ async function removeParticipant(entryId, targetProfileId = null) {
 
   if (!confirm("Are you sure you want to cancel this registration?")) return;
 
-  // 1. Fetch registration details along with profile and tournament info
+  // Fetch registration details including profile & tournament info
   const { data: registrationData, error: fetchErr } = await supabaseClient
     .from('registrations')
     .select(`
@@ -673,7 +676,7 @@ async function removeParticipant(entryId, targetProfileId = null) {
 
   const isPaid = registrationData.payment_status === 'paid' && registrationData.paid_amount > 0;
 
-  // 2. If registration was paid, log it in the refund_requests table
+  // If paid, log a pending entry into refund_requests BEFORE deleting registration
   if (isPaid) {
     const tournamentTitle = registrationData.tournaments?.name || registrationData.tournaments?.game_type || 'Unknown Event';
     const playerName = registrationData.profiles?.player_name || currentSessionUser?.player_name || 'Unknown';
@@ -697,7 +700,7 @@ async function removeParticipant(entryId, targetProfileId = null) {
     }
   }
 
-  // 3. Remove registration record from Supabase
+  // Delete registration record
   const { error: deleteError } = await supabaseClient
     .from('registrations')
     .delete()
@@ -707,13 +710,127 @@ async function removeParticipant(entryId, targetProfileId = null) {
     alert("Failed to remove registration: " + deleteError.message);
   } else {
     alert("Registration canceled successfully." + (isPaid ? " Your refund request has been logged for admin payout." : ""));
-    await loadTournaments();
-    if (isAdmin && typeof loadRefundRequests === 'function') {
-      await loadRefundRequests();
-    }
+    if (typeof loadTournaments === 'function') await loadTournaments();
+    if (isAdmin && typeof loadRefundRequests === 'function') await loadRefundRequests();
   }
 }
 
+// ==========================================
+// 2. ADMIN REFUND MANAGEMENT
+// ==========================================
+
+// Fetch and render refund requests table
+async function loadRefundRequests() {
+  const container = document.getElementById('admin-refunds-container');
+  if (!container) return;
+
+  container.innerHTML = `<p style="color: #94a3b8; font-size: 0.85rem;">Loading refund requests...</p>`;
+
+  const { data: requests, error } = await supabaseClient
+    .from('refund_requests')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.innerHTML = `<p style="color: var(--danger); font-size: 0.85rem;">Error loading refunds: ${error.message}</p>`;
+    return;
+  }
+
+  if (!requests || requests.length === 0) {
+    container.innerHTML = `<p style="color: #64748b; font-size: 0.85rem;">No pending or historical refund requests found.</p>`;
+    return;
+  }
+
+  let html = `
+    <div class="table-wrapper">
+      <table class="leaderboard" style="font-size: 0.85rem;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Player</th>
+            <th>Tournament</th>
+            <th>Ref</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  requests.forEach(req => {
+    const dateFormatted = new Date(req.created_at).toLocaleDateString('en-ZA', {
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    const statusBadge = req.status === 'pending'
+      ? `<span class="badge" style="background:#854d0e; color:#fef08a;">Pending</span>`
+      : req.status === 'completed'
+      ? `<span class="badge" style="background:#166534; color:#86efac;">Processed</span>`
+      : `<span class="badge" style="background:#991b1b; color:#fca5a5;">Rejected</span>`;
+
+    html += `
+      <tr>
+        <td style="color: #94a3b8;">${dateFormatted}</td>
+        <td>
+          <strong>${escapeHtml(req.player_name)}</strong><br>
+          <small style="color: #64748b;">${escapeHtml(req.player_email)}</small>
+        </td>
+        <td>${escapeHtml(req.tournament_name)}</td>
+        <td style="font-family: monospace; font-size: 0.75rem; color: #94a3b8;">${escapeHtml(req.payment_reference)}</td>
+        <td style="color: var(--gold); font-weight: bold;">R${parseFloat(req.amount).toFixed(2)}</td>
+        <td>${statusBadge}</td>
+        <td style="text-align: right;">
+          ${req.status === 'pending' ? `
+            <button 
+              class="btn btn-primary" 
+              style="padding: 3px 8px; font-size: 0.75rem; background: var(--success);"
+              onclick="updateRefundStatus('${req.id}', 'completed')">
+              ✓ Paid
+            </button>
+            <button 
+              class="btn btn-danger" 
+              style="padding: 3px 8px; font-size: 0.75rem;"
+              onclick="updateRefundStatus('${req.id}', 'rejected')">
+              ✕
+            </button>
+          ` : `<span style="color: #64748b; font-size: 0.75rem;">Done</span>`}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
+}
+
+// Update the status of a refund request (Mark as Paid/Rejected)
+async function updateRefundStatus(refundId, newStatus) {
+  const actionText = newStatus === 'completed' ? 'mark as PROCESSED / PAID' : 'REJECT';
+  if (!confirm(`Are you sure you want to ${actionText} this refund request?`)) return;
+
+  const { error } = await supabaseClient
+    .from('refund_requests')
+    .update({ status: newStatus })
+    .eq('id', refundId);
+
+  if (error) {
+    alert("Failed to update status: " + error.message);
+  } else {
+    await loadRefundRequests();
+  }
+}
+
+// XSS Sanitization Helper
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 // 6. Admin Authentication UI Toggle
 function toggleAdminPrompt() {
