@@ -311,8 +311,10 @@ function renderTournaments() {
           : null;
 
         const isGenderEligible = !currentSessionUser || targetGender === 'All' || currentSessionUser.gender === targetGender;
-
-        // Dynamic Registration Action Bar
+        // Inside renderTournaments() mapping loop:
+        const isDoubles = t.is_doubles || false;
+        
+        // Dynamic Action Area rendering
         let actionAreaHtml = '';
         if (!currentSessionUser) {
           actionAreaHtml = `
@@ -335,8 +337,13 @@ function renderTournaments() {
           `;
         } else {
           actionAreaHtml = `
-            <form onsubmit="handleSignup(event, '${t.id}')" style="margin-top: 1rem;">
-              <button type="submit" class="btn btn-primary" style="width: 100%;">Join Tournament as ${escapeHtml(currentSessionUser.player_name)}</button>
+            <form onsubmit="handleSignup(event, '${t.id}', ${isDoubles})" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 8px;">
+              ${isDoubles ? `
+                <input type="text" id="partner-input-${t.id}" class="input-field" placeholder="Partner's Full Name (e.g. Enrique)" required />
+              ` : ''}
+              <button type="submit" class="btn btn-primary" style="width: 100%;">
+                ${isDoubles ? 'Join Doubles Tournament' : `Join Tournament as ${escapeHtml(currentSessionUser.player_name)}`}
+              </button>
             </form>
           `;
         }
