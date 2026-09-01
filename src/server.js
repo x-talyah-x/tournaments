@@ -859,3 +859,100 @@ function togglePlayerProfilePanel() {
     panel.classList.toggle('visible');
   }
 }
+
+// Delete a tournament, process applicable refunds, and clean up records
+async function deleteTournament(tournamentId) {
+  if (!isAdmin) {
+    alert("Unauthorized action. Admin rights required.");
+    return;
+  }
+
+  const tournament = tournamentsData.find(t => t.id === tournamentId);
+  const tournamentName = tournament ? (tournament.name || tournament.game_type || "Unknown Event") : "this tournament";
+
+  if (!confirm(`Are you sure you want to delete "${tournamentName}"? This will cancel all registrations and log refund requests for paid entries.`)) {
+    return;
+  }
+
+  // 1. Fetch all existing registrations for this tournament along with profile info
+  const { data: registrations, error: fetchErr } = await supabaseClient
+    .from('registrations')
+    .select(`
+      id,
+      payment_status,
+      payment_reference,
+      paid_amount,
+      profiles (
+        player_name,
+        email
+      )
+    `)
+    .eq('tournament_id', tournamentId);
+
+  if (fetchErr) {
+    console.error("Error fetching registrations for deletion:", fetchErr);
+    alert("Failed to retrieve tournament registrations: " + fetchErr.message);
+    return;
+  }
+
+  // 2. Identify paid entries and batch insert them into 'refund_requests'
+  const paidRegistrations = (registrations || []).filter(
+    r => r.payment_status === 'paid' && r.paid_amount > 0
+  );
+
+  if (paidRegistrations.length > 0) {
+    const refundRows = paidRegistrations.map(r => ({
+      registration_id: r.id,
+      tournament_name: tournamentName,
+      player_name: r.profiles?.player_name || 'Unknown',
+      player_email: r.profiles?.email || 'N/A',
+      payment_reference: r.payment_reference || 'N/A',
+      amount: r.paid_amount,
+      status: 'pending'
+    }));
+
+    const { error: refundErr } = await supabaseClient
+      .from('refund_requests')
+      .insert(refundRows);
+
+    if (refundErr) {
+      console.error("Error logging refund requests:", refundErr);
+      alert("Failed to record refund requests: " + refundErr.message);
+      return;
+    }
+  }
+
+  // 3. Delete all registrations associated with this tournament
+  const { error: regDeleteError } = await supabaseClient
+    .from('registrations')
+    .delete()
+    .eq('tournament_id', tournamentId);
+
+  if (regDeleteError) {
+    console.error("Error deleting registrations:", regDeleteError);
+    alert("Failed to clear registrations: " + regDeleteError.message);
+    return;
+  }
+
+  // 4. Delete the tournament record
+  const { error: tournamentDeleteError } = await supabaseClient
+    .from('tournaments')
+    .delete()
+    .eq('id', tournamentId);
+
+  if (tournamentDeleteError) {
+    console.error("Error deleting tournament:", tournamentDeleteError);
+    alert("Failed to delete tournament: " + tournamentDeleteError.message);
+  } else {
+    const refundMessage = paidRegistrations.length > 0
+      ? ` ${paidRegistrations.length} refund request(s) logged for admin payout.`
+      : '';
+    alert(`Tournament deleted successfully!${refundMessage}`);
+    
+    // Refresh both tournaments display and admin refund queue
+    await loadTournaments();
+    if (typeof loadRefundRequests === 'function') {
+      await loadRefundRequests();
+    }
+  }
+}
