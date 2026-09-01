@@ -538,10 +538,13 @@ function logoutAdmin() {
   renderTournaments();
 }
 
-// Toggle Profile Panel Visibility
 function togglePlayerProfilePanel() {
   const panel = document.getElementById('player-panel');
-  if (panel) {
-    panel.classList.toggle('visible');
+  panel.classList.toggle('visible');
+  
+  // Always reset view to log in form when opening
+  if (panel.classList.contains('visible')) {
+    switchAuthTab('login');
   }
+}
 }
