@@ -680,13 +680,8 @@ async function removeParticipant(entryId, targetProfileId = null) {
     const { error: refundLogErr } = await supabaseClient
       .from('refund_requests')
       .insert([{
-        registration_id: entryId,
-        tournament_name: tournamentTitle,
-        player_name: playerName,
-        player_email: playerEmail,
-        payment_reference: registration.payment_reference || 'N/A',
-        amount: registration.paid_amount,
-        status: 'pending'
+      registration_id: registrationId, // Links directly to registrations
+      amount: refundAmount,
       }]);
 
     if (refundLogErr) {
