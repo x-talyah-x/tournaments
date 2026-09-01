@@ -569,4 +569,3 @@ function togglePlayerProfilePanel() {
     switchAuthTab('login');
   }
 }
-}
