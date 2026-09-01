@@ -304,6 +304,7 @@ function renderTournaments() {
         const tournamentName = t.name ? escapeHtml(t.name) : escapeHtml((t.game_type || '').toUpperCase());
         const targetGender = t.target_gender || 'All';
         const genderBadgeText = targetGender === 'All' ? 'Open' : `${targetGender} Only`;
+        const isDoubles = t.is_doubles || false;
 
         // Determine session registration & gender eligibility
         const userRegistration = currentSessionUser 
@@ -311,10 +312,8 @@ function renderTournaments() {
           : null;
 
         const isGenderEligible = !currentSessionUser || targetGender === 'All' || currentSessionUser.gender === targetGender;
-        // Inside renderTournaments() mapping loop:
-        const isDoubles = t.is_doubles || false;
-        
-        // Dynamic Action Area rendering
+
+        // Dynamic Registration Action Bar
         let actionAreaHtml = '';
         if (!currentSessionUser) {
           actionAreaHtml = `
@@ -359,6 +358,7 @@ function renderTournaments() {
             </div>
 
             <div class="tournament-badge-row">
+              <span class="badge" style="background: var(--gold); color: #000;">${isDoubles ? '👥 Doubles' : '👤 Singles'}</span>
               <span class="badge" style="background: var(--gold); color: #000;">Division: ${escapeHtml(genderBadgeText)}</span>
               <span class="badge">Game: ${escapeHtml(t.game_type || '')}</span>
               <span class="badge">Format: ${escapeHtml(t.format || '')}</span>
@@ -374,7 +374,7 @@ function renderTournaments() {
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>Player</th>
+                      <th>${isDoubles ? 'Pair' : 'Player'}</th>
                       <th class="admin-col">Actions</th>
                     </tr>
                   </thead>
@@ -383,11 +383,15 @@ function renderTournaments() {
                       const profile = entry.profiles || {};
                       const isCurrentUser = currentSessionUser && profile.id === currentSessionUser.id;
 
+                      const displayName = entry.partner_name 
+                        ? `${escapeHtml(profile.player_name || 'Unknown')} & ${escapeHtml(entry.partner_name)}`
+                        : escapeHtml(profile.player_name || 'Unknown');
+
                       return `
                         <tr style="${isCurrentUser ? 'background: rgba(56, 189, 248, 0.08);' : ''}">
                           <td>${idx + 1}</td>
                           <td>
-                            <strong>${escapeHtml(profile.player_name || 'Unknown')}</strong>
+                            <strong>${displayName}</strong>
                             ${isCurrentUser ? ' <span style="font-size: 0.75rem; color: var(--accent);">(You)</span>' : ''}
                           </td>
                           <td class="admin-col">
@@ -408,8 +412,6 @@ function renderTournaments() {
 
   container.innerHTML = htmlContent;
 }
-
-// 4. Admin Actions
 // 4. Admin Actions (Updated to include notification dispatch)
 async function handleCreateTournament(event) {
   event.preventDefault();
