@@ -63,6 +63,7 @@ async function handleSignUp(event) {
   event.preventDefault();
 
   const playerName = document.getElementById('p-name')?.value.trim();
+  const playerSurname = document.getElementById('p-surname')?.value.trim();
   const email = document.getElementById('p-email')?.value.trim();
   const password = document.getElementById('p-password')?.value;
   const gender = document.getElementById('p-gender')?.value;
@@ -97,7 +98,7 @@ async function handleSignUp(event) {
     .from('profiles')
     .insert([
       { 
-        player_name: playerName,
+        player_name: playerName + " " + playerSurname,
         email: email,
         password: hashedPassword,
         gender: gender, 
