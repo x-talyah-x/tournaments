@@ -235,39 +235,39 @@
         <button class="btn btn-primary" onclick="togglePlayerProfilePanel()">Close</button>
       </div>
 
+
       <!-- Auth Mode Switcher -->
-      <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
-         <button type="button" id="tab-login-btn" class="btn btn-primary" style="flex: 1;" onclick="switchAuthTab('login')">Log In</button>
-        <button type="button" id="tab-signup-btn" class="btn btn-secondary" style="flex: 1;" onclick="switchAuthTab('signup')">Sign Up</button>
-      </div>
+<div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+  <button type="button" id="tab-login-btn" class="btn btn-primary" style="flex: 1;" onclick="switchAuthTab('login')">Log In</button>
+  <button type="button" id="tab-signup-btn" class="btn btn-secondary" style="flex: 1;" onclick="switchAuthTab('signup')">Sign Up</button>
+</div>
 
-       <!-- Log In Form -->
-      <form id="login-form" onsubmit="handleLogIn(event)" style="display: none;">
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <input type="email" id="login-email" class="input-field" placeholder="Email Address" required>
-          <input type="password" id="login-password" class="input-field" placeholder="Password" required>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Log In</button>
-      </form>
-      
-      <!-- Sign Up Form -->
-      <form id="signup-form" onsubmit="handleSignUp(event)">
-        <div class="form-grid">
-          <input type="text" id="p-name" class="input-field" placeholder="Full Name" required style="grid-column: span 2;">
-          <input type="email" id="p-email" class="input-field" placeholder="Email Address" required style="grid-column: span 2;">
-          <input type="password" id="p-password" class="input-field" placeholder="Password" minlength="4" required style="grid-column: span 2;">
-          
-          <select id="p-gender" class="select-field" required>
-            <option value="" disabled selected>Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
+<!-- Log In Form (Default Active) -->
+<form id="login-form" onsubmit="handleLogIn(event)">
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <input type="email" id="login-email" class="input-field" placeholder="Email Address" required>
+    <input type="password" id="login-password" class="input-field" placeholder="Password" required>
+  </div>
+  <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Log In</button>
+</form>
 
-          <input type="date" id="p-dob" class="input-field" required title="Date of Birth">
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Create Profile</button>
-      </form>
+<!-- Sign Up Form (Hidden by Default) -->
+<form id="signup-form" onsubmit="handleSignUp(event)" style="display: none;">
+  <div class="form-grid">
+    <input type="text" id="p-name" class="input-field" placeholder="Full Name" required style="grid-column: span 2;">
+    <input type="email" id="p-email" class="input-field" placeholder="Email Address" required style="grid-column: span 2;">
+    <input type="password" id="p-password" class="input-field" placeholder="Password" minlength="4" required style="grid-column: span 2;">
+    
+    <select id="p-gender" class="select-field" required>
+      <option value="" disabled selected>Select Gender</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+    </select>
 
+    <input type="date" id="p-dob" class="input-field" required title="Date of Birth">
+  </div>
+  <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Create Profile</button>
+</form>
      
 
       <!-- User Status Header -->
