@@ -646,15 +646,21 @@ async function removeParticipant(entryId, targetProfileId = null) {
 
   if (!confirm("Are you sure you want to cancel this registration?")) return;
 
-  const response = await fetch('/api/registrations/cancel', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      entryId: entryId,
-      userId: currentSessionUser?.id,
-      isAdmin: isAdmin
-    })
-  });
+  if (registration.payment_status === 'paid' && registration.paid_amount > 0) {
+      const { error: refundErr } = await supabaseAdmin
+        .from('refund_requests')
+        .insert([{
+          registration_id: registration.id,
+          profile_id: registration.profile_id,
+          amount: registration.paid_amount,
+          payment_reference: registration.payment_reference,
+          status: 'pending'
+        }]);
+
+      if (refundErr) {
+        console.error("Error logging refund:", refundErr);
+      }
+    }
 
   const result = await response.json();
 
