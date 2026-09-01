@@ -11,13 +11,14 @@
   <!-- Paystack Inline JS SDK -->
   <script src="https://js.paystack.co/v1/inline.js"></script>
   
-  <!-- Load your app logic -->
-  <script src="server.js" defer></script>
+  <!-- Load client application logic (Updated filename from server.js to app.js) -->
+  <script src="app.js" defer></script>
   
   <style>
     :root {
       --bg: #070b12;
       --card-bg: #0f172a;
+      --surface: #020617;
       --text: #f8fafc;
       --accent: #38bdf8;
       --gold: #fbbf24;
@@ -59,10 +60,9 @@
       right: 1rem;
       display: flex;
       justify-content: space-between;
-      pointer-events: none; /* Allows clicks through container padding */
+      pointer-events: none;
     }
 
-    /* Logo Image Styling */
     .brand-logo {
       max-width: 120px;
       height: auto;
@@ -71,8 +71,8 @@
     }
 
     .action-corner-btn {
-      pointer-events: auto; /* Enables clicks on buttons */
-      background: #020617;
+      pointer-events: auto;
+      background: var(--surface);
       border: 1px solid var(--border);
       color: #94a3b8;
       padding: 6px 12px;
@@ -114,7 +114,7 @@
 
     .admin-panel, .player-panel {
       display: none;
-      background: #020617;
+      background: var(--surface);
       border: 1px solid var(--accent);
       border-radius: 12px;
       padding: 1.25rem;
@@ -133,7 +133,7 @@
     }
 
     .tournament-card {
-      background: #020617;
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 1.25rem;
@@ -167,13 +167,6 @@
       border-radius: 12px;
       font-size: 0.8rem;
       font-weight: 600;
-    }
-
-    .signup-form {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1.2fr auto;
-      gap: 8px;
-      margin-top: 1rem;
     }
 
     .input-field, .select-field {
@@ -222,8 +215,6 @@
 
     @media (max-width: 580px) {
       .form-grid { grid-template-columns: 1fr; }
-      .signup-form { grid-template-columns: 1fr 1fr; }
-      .signup-form button { grid-column: span 2; }
     }
   </style>
 </head>
@@ -232,7 +223,7 @@
   <div class="container">
     <div class="top-actions">
       <button id="player-profile-btn" class="action-corner-btn" onclick="togglePlayerProfilePanel()">
-        <span>👤</span> <span>Sign Up/Log In</span>
+        <span>👤</span> <span>Sign Up / Log In</span>
       </button>
       <button id="admin-toggle-btn" class="action-corner-btn" onclick="toggleAdminPrompt()">
         <span>🔒</span> <span id="admin-btn-label">Admin Login</span>
@@ -240,7 +231,7 @@
     </div>
 
     <div class="header">
-      <img src="logo.png" alt="Basil's Billiards Logo" class="brand-logo">
+      <img src="logo.png" alt="Basil's Billiards Logo" class="brand-logo" onerror="this.style.display='none'">
       <h1>Basil's Billiards</h1>
       <h3>Upcoming Tournament Entries</h3>
     </div>
@@ -258,30 +249,30 @@
         <button type="button" id="tab-signup-btn" class="btn btn-secondary" style="flex: 1;" onclick="switchAuthTab('signup')">Sign Up</button>
       </div>
 
-      <!-- Log In Form (Default Active) -->
+      <!-- Log In Form -->
       <form id="login-form" onsubmit="handleLogIn(event)">
         <div style="display: flex; flex-direction: column; gap: 10px;">
-          <input type="email" id="login-email" class="input-field" placeholder="Email Address" required>
-          <input type="password" id="login-password" class="input-field" placeholder="Password" required>
+          <input type="email" id="login-email" class="input-field" placeholder="Email Address" required aria-label="Email Address">
+          <input type="password" id="login-password" class="input-field" placeholder="Password" required aria-label="Password">
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Log In</button>
       </form>
 
-      <!-- Sign Up Form (Hidden by Default) -->
+      <!-- Sign Up Form -->
       <form id="signup-form" onsubmit="handleSignUp(event)" style="display: none;">
         <div class="form-grid">
-          <input type="text" id="p-name" class="input-field" placeholder="First Name" required style="grid-column: span 2;">
-          <input type="text" id="p-surname" class="input-field" placeholder="Surname" required style="grid-column: span 2;">
-          <input type="email" id="p-email" class="input-field" placeholder="Email Address" required style="grid-column: span 2;">
-          <input type="password" id="p-password" class="input-field" placeholder="Password" minlength="4" required style="grid-column: span 2;">
+          <input type="text" id="p-name" class="input-field" placeholder="First Name" required style="grid-column: span 2;" aria-label="First Name">
+          <input type="text" id="p-surname" class="input-field" placeholder="Surname" required style="grid-column: span 2;" aria-label="Surname">
+          <input type="email" id="p-email" class="input-field" placeholder="Email Address" required style="grid-column: span 2;" aria-label="Email Address">
+          <input type="password" id="p-password" class="input-field" placeholder="Password" minlength="6" required style="grid-column: span 2;" aria-label="Password">
           
-          <select id="p-gender" class="select-field" required>
+          <select id="p-gender" class="select-field" required aria-label="Gender">
             <option value="" disabled selected>Select Gender</option>
             <option value="Male">Male</option>
             <option value="Female">Female</option>
           </select>
 
-          <input type="date" id="p-dob" class="input-field" required title="Date of Birth">
+          <input type="date" id="p-dob" class="input-field" required aria-label="Date of Birth">
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 10px;">Create Profile</button>
       </form>
@@ -309,6 +300,7 @@
             placeholder="Tournament Name (e.g. Ladies Night Special)" 
             required 
             style="grid-column: span 2;"
+            aria-label="Tournament Name"
           >
 
           <input 
@@ -316,9 +308,10 @@
             id="t-date" 
             class="input-field" 
             required
+            aria-label="Event Date and Time"
           >
 
-          <select id="t-game" class="select-field" required>
+          <select id="t-game" class="select-field" required aria-label="Game Type">
             <option value="Blackball">Blackball</option>
             <option value="8 Ball">8 Ball</option>
             <option value="9 Ball">9 Ball</option>
@@ -334,15 +327,15 @@
             min="1" 
             step="1" 
             required
+            aria-label="Race To"
           >
 
-          <select id="t-format" class="select-field" required>
+          <select id="t-format" class="select-field" required aria-label="Format">
             <option value="Knockouts">Knockouts</option>
             <option value="Round Robin">Round Robin</option>
           </select>
 
-          <!-- Target Gender and Entry Fee grouped into the same row -->
-          <select id="t-target-gender" class="select-field" required>
+          <select id="t-target-gender" class="select-field" required aria-label="Target Gender">
             <option value="All">Open / All Genders</option>
             <option value="Female">Female Only (Ladies)</option>
             <option value="Male">Male Only (Mens)</option>
@@ -356,6 +349,7 @@
             min="0" 
             step="1" 
             required
+            aria-label="Entry Fee"
           >
 
           <div style="grid-column: span 2; display: flex; align-items: center; gap: 8px; margin-top: 5px;">
@@ -380,7 +374,6 @@
           </button>
         </div>
         
-        <!-- Table container dynamically populated by server.js -->
         <div id="admin-refunds-container"></div>
       </div>
     </div>
@@ -398,7 +391,7 @@
       <button class="btn btn-secondary" onclick="clearDateFilter()">Clear</button>
     </div>
 
-    <!-- Active Tournaments List (Single Instance) -->
+    <!-- Active Tournaments List -->
     <div id="tournaments-container"></div>
   </div>
 
