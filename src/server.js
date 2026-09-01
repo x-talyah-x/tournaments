@@ -263,10 +263,11 @@ function getDateCategory(isoString) {
   const diffTime = eventDay - today;
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return 'Past Events';
+ if (diffDays < 0) return 'Past Events';
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Tomorrow';
-  if (diffDays > 1 && diffDays <= 7) return 'Next Week';
+  if (diffDays > 1 && diffDays <= 7) return 'This Week';
+  if (diffDays > 7 && diffDays <= 14) return 'Next Week';
   return 'Later';
 }
 
