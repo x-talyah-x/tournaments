@@ -183,7 +183,6 @@ function setSessionUser(user) {
 function handleLogOut() {
   currentSessionUser = null;
   setSessionUser(null);
-  alert("Logged out.");
   togglePlayerProfilePanel();
 }
 
