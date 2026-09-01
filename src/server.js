@@ -769,13 +769,12 @@ async function loadRefundRequests() {
 
     html += `
       <tr>
-        <td style="color: #94a3b8;">${dateFormatted}</td>
         <td>
           <strong>${escapeHtml(req.player_name)}</strong><br>
           <small style="color: #64748b;">${escapeHtml(req.player_email)}</small>
         </td>
         <td>${escapeHtml(req.tournament_name)}</td>
-        <td style="font-family: monospace; font-size: 0.75rem; color: #94a3b8;">${escapeHtml(req.payment_reference)}</td>
+
         <td style="color: var(--gold); font-weight: bold;">R${parseFloat(req.amount).toFixed(2)}</td>
         <td>${statusBadge}</td>
         <td style="text-align: right;">
