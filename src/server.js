@@ -644,20 +644,66 @@ async function removeParticipant(entryId, targetProfileId = null) {
     return;
   }
 
-  if (confirm("Are you sure you want to cancel this registration?")) {
-    const { error } = await supabaseClient
-      .from('registrations')
-      .delete()
-      .eq('id', entryId);
+  if (!confirm("Are you sure you want to cancel this registration?")) return;
 
-    if (error) {
-      alert("Failed to remove registration: " + error.message);
-    } else {
-      await loadTournaments();
+  // 1. Fetch current registration details to check payment status
+  const { data: registration, error: fetchErr } = await supabaseClient
+    .from('registrations')
+    .select('id, payment_status, payment_reference, paid_amount')
+    .eq('id', entryId)
+    .single();
+
+  if (fetchErr || !registration) {
+    alert("Could not fetch registration details.");
+    return;
+  }
+
+  // 2. Trigger refund process if paid via Paystack
+  if (registration.payment_status === 'paid' && registration.payment_reference) {
+    const processRefund = confirm("This registration includes a paid fee. Process refund via Paystack?");
+
+    if (processRefund) {
+      try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/refund-paystack`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            reference: registration.payment_reference,
+            amount: registration.paid_amount
+          })
+        });
+
+        const refundResult = await response.json();
+
+        if (!response.ok || refundResult.error) {
+          alert(`Refund failed: ${refundResult.error}. Registration removal canceled.`);
+          return;
+        }
+
+        alert("Refund successfully processed via Paystack!");
+      } catch (err) {
+        alert("Network error processing refund: " + err.message);
+        return;
+      }
     }
   }
-}
 
+  // 3. Delete or update record in Supabase
+  const { error: deleteError } = await supabaseClient
+    .from('registrations')
+    .delete()
+    .eq('id', entryId);
+
+  if (deleteError) {
+    alert("Failed to remove registration: " + deleteError.message);
+  } else {
+    alert("Registration removed successfully.");
+    await loadTournaments();
+  }
+}
 // 6. Admin Authentication UI Toggle
 function toggleAdminPrompt() {
   if (isAdmin) { 
