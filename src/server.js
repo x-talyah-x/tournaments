@@ -450,32 +450,32 @@ async function handleCreateTournament(event) {
     return;
   }
 
-  // 2. Query users who opted in for email notifications
-  const { data: notifiedUsers, error: userError } = await supabaseClient
-    .from('profiles')
-    .select('email, player_name')
-    .eq('notifications', true); // Assumes boolean column name 'notifications_enabled'
+  // // 2. Query users who opted in for email notifications
+  // const { data: notifiedUsers, error: userError } = await supabaseClient
+  //   .from('profiles')
+  //   .select('email, player_name')
+  //   .eq('notifications', true); // Assumes boolean column name 'notifications_enabled'
 
-  if (!userError && notifiedUsers && notifiedUsers.length > 0) {
-    // 3. Trigger Email Dispatch via Supabase Edge Function
-    try {
-      await supabaseClient.functions.invoke('send-tournament-email', {
-        body: {
-          recipients: notifiedUsers,
-          tournament: {
-            name: name,
-            event_date: formatTournamentDate(eventDate),
-            game_type: gameType,
-            format: format,
-            race_to: raceToText
-          }
-        }
-      });
-      console.log(`Notification request sent for ${notifiedUsers.length} users.`);
-    } catch (notifyErr) {
-      console.error("Failed to trigger email notifications:", notifyErr);
-    }
-  }
+  // if (!userError && notifiedUsers && notifiedUsers.length > 0) {
+  //   // 3. Trigger Email Dispatch via Supabase Edge Function
+  //   try {
+  //     await supabaseClient.functions.invoke('send-tournament-email', {
+  //       body: {
+  //         recipients: notifiedUsers,
+  //         tournament: {
+  //           name: name,
+  //           event_date: formatTournamentDate(eventDate),
+  //           game_type: gameType,
+  //           format: format,
+  //           race_to: raceToText
+  //         }
+  //       }
+  //     });
+  //     console.log(`Notification request sent for ${notifiedUsers.length} users.`);
+  //   } catch (notifyErr) {
+  //     console.error("Failed to trigger email notifications:", notifyErr);
+  //   }
+  // }
 
   alert("Tournament created successfully!");
   event.target.reset();
