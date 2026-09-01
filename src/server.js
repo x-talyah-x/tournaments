@@ -746,10 +746,8 @@ async function loadRefundRequests() {
       <table class="leaderboard" style="font-size: 0.85rem;">
         <thead>
           <tr>
-            <th>Date</th>
             <th>Player</th>
             <th>Tournament</th>
-            <th>Ref</th>
             <th>Amount</th>
             <th>Status</th>
             <th style="text-align: right;">Action</th>
