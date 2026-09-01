@@ -729,16 +729,7 @@ function toggleAdminPrompt() {
     loadRefundRequests(); // <-- Add this call
   }
 }
-  const inputPass = prompt("Admin Password:");
-  if (inputPass) {
-    isAdmin = true;
-    document.getElementById('app-body')?.classList.add('admin-mode-active');
-    document.getElementById('admin-panel')?.classList.add('visible');
-    const label = document.getElementById('admin-btn-label');
-    if (label) label.innerText = 'Exit Edit Mode';
-    renderTournaments();
-  }
-}
+
 
 function logoutAdmin() {
   isAdmin = false;
