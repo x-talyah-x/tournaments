@@ -596,6 +596,7 @@ async function handleSignup(e, tournamentId, isDoubles) {
       amount: entryFee 
     });
   }
+}
 
   // 2. Pay via Cash Option
   if (paymentMethod === 'cash') {
