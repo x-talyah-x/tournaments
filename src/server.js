@@ -1082,10 +1082,13 @@ async function handleWalletDeposit() {
 
   handler.openIframe();
 }
-// Withdraw funds directly to bank account
-// Log withdrawal request for manual Paystack processing
+
+// Log withdrawal request for manual Paystack processing and open mail draft
 async function handleWalletWithdraw() {
   if (!currentSessionUser) return alert("Please log in first.");
+
+  // Set your target admin email address here
+  const ADMIN_EMAIL = "your-email@domain.com";
 
   // 1. Fetch user's current wallet balance
   const { data: profile, error: profileErr } = await supabaseClient
@@ -1106,9 +1109,17 @@ async function handleWalletWithdraw() {
   if (amount > currentBalance) return alert("Insufficient wallet funds.");
 
   // 2. Prompt user for banking details
+  const bankName = prompt("Enter Bank Name (e.g., ABSA, FNB, Capitec):");
+  const accountNumber = prompt("Enter Account Number:");
+  const accountName = prompt("Enter Account Holder Name:");
+
+  if (!bankName || !accountNumber || !accountName) {
+    return alert("All bank details are required to log a withdrawal request.");
+  }
+
   const reference = `WITHDRAW-${currentSessionUser.id.substring(0, 5)}-${Date.now()}`;
 
-  // 3. Deduct funds from user wallet balance immediately to lock the amount
+  // 3. Deduct funds from user wallet balance immediately
   const newBalance = currentBalance - amount;
 
   const { error: balanceErr } = await supabaseClient
@@ -1120,7 +1131,7 @@ async function handleWalletWithdraw() {
     return alert("Failed to process withdrawal request: " + balanceErr.message);
   }
 
-  // 4. Log the withdrawal request in the database for manual admin action
+  // 4. Log the withdrawal request in the database
   const { error: logErr } = await supabaseClient
     .from('withdrawal_requests')
     .insert([{
@@ -1136,7 +1147,7 @@ async function handleWalletWithdraw() {
     }]);
 
   if (logErr) {
-    // Rollback balance update if logging fails
+    // Rollback balance update if database logging fails
     await supabaseClient
       .from('profiles')
       .update({ wallet_balance: currentBalance })
@@ -1145,7 +1156,7 @@ async function handleWalletWithdraw() {
     return alert("Error logging withdrawal request: " + logErr.message);
   }
 
-  // 5. Log transaction entry
+  // 5. Log transaction entry in ledger
   await supabaseClient.from('wallet_transactions').insert([{
     profile_id: currentSessionUser.id,
     type: 'withdrawal_request',
@@ -1153,11 +1164,29 @@ async function handleWalletWithdraw() {
     reference: reference
   }]);
 
-  // Update local session state & UI
+  // 6. Update local session state & UI
   currentSessionUser.wallet_balance = newBalance;
   updateWalletUI();
 
-  alert(`Withdrawal request of R${amount.toFixed(2)} submitted successfully!\n\nReference: ${reference}\nAn admin will review and manually process the refund.`);
+  // 7. Construct and trigger the mailto link to open the email app
+  const mailSubject = encodeURIComponent(`Withdrawal Request: ${currentSessionUser.player_name} (R${amount.toFixed(2)})`);
+  const mailBody = encodeURIComponent(
+    `MANUAL WITHDRAWAL / REFUND REQUEST\n` +
+    `----------------------------------------\n` +
+    `Player Name: ${currentSessionUser.player_name}\n` +
+    `Player Email: ${currentSessionUser.email}\n` +
+    `Amount: R${amount.toFixed(2)}\n\n` +
+    `BANKING DETAILS FOR MANUAL REFUND:\n` +
+    `Bank Name: ${bankName}\n` +
+    `Account Number: ${accountNumber}\n` +
+    `Account Holder: ${accountName}\n\n` +
+    `Reference: ${reference}\n` +
+    `----------------------------------------`
+  );
+
+  window.open(`mailto:${ADMIN_EMAIL}?subject=${mailSubject}&body=${mailBody}`, '_blank');
+
+  alert(`Withdrawal request of R${amount.toFixed(2)} submitted successfully!\n\nReference: ${reference}\nAn email draft has been generated for admin review.`);
 }
 
 function updateWalletUI() {
