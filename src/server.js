@@ -771,17 +771,87 @@ async function loadRefundRequests() {
 }
 
 async function updateRefundStatus(refundId, newStatus) {
-  const actionText = newStatus === 'completed' ? 'mark as PROCESSED / PAID' : 'REJECT';
+  const actionText = newStatus === 'completed' ? 'approve and CREDIT WALLET for' : 'REJECT';
   if (!confirm(`Are you sure you want to ${actionText} this refund request?`)) return;
 
-  const { error } = await supabaseClient
+  // 1. Fetch the refund request details
+  const { data: refundReq, error: fetchErr } = await supabaseClient
+    .from('refund_requests')
+    .select('*')
+    .eq('id', refundId)
+    .single();
+
+  if (fetchErr || !refundReq) {
+    alert("Error fetching refund details: " + (fetchErr?.message || "Request not found"));
+    return;
+  }
+
+  // Prevent processing an already completed refund
+  if (refundReq.status === 'completed') {
+    alert("This refund request has already been processed.");
+    return;
+  }
+
+  // 2. If approving the refund, credit the user's wallet
+  if (newStatus === 'completed') {
+    const refundAmount = parseFloat(refundReq.amount || 0);
+
+    // Fetch the target player's current wallet balance using email or player identity
+    const { data: profile, error: profileErr } = await supabaseClient
+      .from('profiles')
+      .select('id, wallet_balance')
+      .ilike('email', refundReq.player_email)
+      .maybeSingle();
+
+    if (profileErr || !profile) {
+      alert("Could not locate profile for email: " + refundReq.player_email + ". Wallet not credited.");
+      return;
+    }
+
+    const currentBalance = parseFloat(profile.wallet_balance || 0);
+    const updatedBalance = currentBalance + refundAmount;
+
+    // A. Increment user's wallet balance
+    const { error: walletErr } = await supabaseClient
+      .from('profiles')
+      .update({ wallet_balance: updatedBalance })
+      .eq('id', profile.id);
+
+    if (walletErr) {
+      alert("Failed to update wallet balance: " + walletErr.message);
+      return;
+    }
+
+    // B. Log transaction in wallet_transactions ledger
+    await supabaseClient
+      .from('wallet_transactions')
+      .insert([{
+        profile_id: profile.id,
+        type: 'refund',
+        amount: refundAmount,
+        reference: `REFUND-${refundReq.tournament_name}`
+      }]);
+
+    // C. Update active session balance if admin is refunding themselves
+    if (currentSessionUser && currentSessionUser.id === profile.id) {
+      currentSessionUser.wallet_balance = updatedBalance;
+      if (typeof updateWalletUI === 'function') updateWalletUI();
+    }
+  }
+
+  // 3. Mark the refund request status as completed/rejected
+  const { error: updateErr } = await supabaseClient
     .from('refund_requests')
     .update({ status: newStatus })
     .eq('id', refundId);
 
-  if (error) {
-    alert("Failed to update status: " + error.message);
+  if (updateErr) {
+    alert("Failed to update refund status: " + updateErr.message);
   } else {
+    alert(newStatus === 'completed' 
+      ? `Refund approved! R${parseFloat(refundReq.amount).toFixed(2)} has been credited back to the player's wallet.` 
+      : "Refund request rejected."
+    );
     await loadRefundRequests();
   }
 }
