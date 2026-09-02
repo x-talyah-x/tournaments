@@ -385,7 +385,6 @@ function renderTournaments() {
               ${entryFee > 0 ? `
                 <select id="payment-method-${t.id}" class="select-field" required>
                   <option value="wallet">Pay with Wallet (Balance: R${userWalletBalance.toFixed(2)})</option>
-                  <option value="EFT">Pay Online / EFT (Paystack)</option>
                   <option value="cash">Pay Cash at Venue</option>
                 </select>
               ` : ''}
@@ -544,21 +543,40 @@ async function handleSignup(e, tournamentId, isDoubles) {
   let partnerName = isDoubles ? document.getElementById(`partner-input-${tournamentId}`)?.value.trim() : null;
   const paymentMethod = entryFee > 0 ? document.getElementById(`payment-method-${tournamentId}`)?.value : 'free';
 
+  // Free entry handling
   if (entryFee <= 0 || paymentMethod === 'free') {
-    return completeRegistration({ tournamentId, profileId: currentSessionUser.id, partnerName, paymentStatus: 'free', paymentMethod: 'free' });
+    return completeRegistration({ 
+      tournamentId, 
+      profileId: currentSessionUser.id, 
+      partnerName, 
+      paymentStatus: 'free', 
+      paymentMethod: 'free' 
+    });
   }
 
   // 1. Pay via Virtual Wallet
   if (paymentMethod === 'wallet') {
-    const { data: profile } = await supabaseClient.from('profiles').select('wallet_balance').eq('id', currentSessionUser.id).single();
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('wallet_balance')
+      .eq('id', currentSessionUser.id)
+      .single();
+
     const balance = parseFloat(profile?.wallet_balance || 0);
 
     if (balance < entryFee) {
-      return alert(`Insufficient wallet balance (R${balance.toFixed(2)}). Please deposit funds or choose Cash/EFT.`);
+      return alert(`Insufficient wallet balance (R${balance.toFixed(2)}). Please deposit funds into your wallet using Paystack or choose Cash at venue.`);
     }
 
     const newBalance = balance - entryFee;
-    await supabaseClient.from('profiles').update({ wallet_balance: newBalance }).eq('id', currentSessionUser.id);
+    
+    // Deduct funds from profile
+    await supabaseClient
+      .from('profiles')
+      .update({ wallet_balance: newBalance })
+      .eq('id', currentSessionUser.id);
+
+    // Record wallet ledger transaction
     await supabaseClient.from('wallet_transactions').insert([{
       profile_id: currentSessionUser.id,
       type: 'tournament_entry',
@@ -569,35 +587,28 @@ async function handleSignup(e, tournamentId, isDoubles) {
     currentSessionUser.wallet_balance = newBalance;
     updateWalletUI();
 
-    return completeRegistration({ tournamentId, profileId: currentSessionUser.id, partnerName, paymentStatus: 'paid', paymentMethod: 'wallet', amount: entryFee });
+    return completeRegistration({ 
+      tournamentId, 
+      profileId: currentSessionUser.id, 
+      partnerName, 
+      paymentStatus: 'paid', 
+      paymentMethod: 'wallet', 
+      amount: entryFee 
+    });
   }
 
   // 2. Pay via Cash Option
   if (paymentMethod === 'cash') {
-    return completeRegistration({ tournamentId, profileId: currentSessionUser.id, partnerName, paymentStatus: 'pending_cash', paymentMethod: 'cash', amount: entryFee });
-  }
-
-  // 3. Pay via EFT / Paystack
-  payWithPaystack({ amount: entryFee, email: currentSessionUser.email, tournamentId, partnerName });
-}
-
-// Paystack Gateway Handler
-function payWithPaystack({ amount, email, tournamentId, partnerName }) {
-  const reference = `BB-${tournamentId.substring(0, 5)}-${Date.now()}`;
-
-  // Dedicated callback handler function
-  function handlePaystackSuccess(response) {
-    alert(`Payment successful! Reference: ${response.reference}`);
-    
-    completeRegistration({
-      tournamentId: tournamentId,
-      profileId: currentSessionUser.id,
-      partnerName: partnerName,
-      paymentStatus: 'paid',
-      reference: response.reference,
-      amount: amount
+    return completeRegistration({ 
+      tournamentId, 
+      profileId: currentSessionUser.id, 
+      partnerName, 
+      paymentStatus: 'pending_cash', 
+      paymentMethod: 'cash', 
+      amount: entryFee 
     });
   }
+}
 
   // Dedicated onClose handler function
   function handlePaystackClose() {
