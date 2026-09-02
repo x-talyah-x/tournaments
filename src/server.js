@@ -1099,7 +1099,6 @@ async function handleWalletWithdraw() {
   if (isNaN(amount) || amount <= 0) return alert("Invalid amount.");
   if (amount > currentBalance) return alert("Insufficient wallet funds.");
 
-  // Prompt for structured bank inputs required by Paystack
   const bankCode = prompt("Enter your Bank Code (e.g., 632005 for ABSA, 250655 for FNB):");
   const accountNumber = prompt("Enter your Account Number:");
   const accountName = prompt("Enter Account Holder Name:");
@@ -1108,18 +1107,25 @@ async function handleWalletWithdraw() {
     return alert("All bank details are required for Paystack transfers.");
   }
 
-  // Call the secure Supabase Edge Function
+  // Pass profileId along with bank details
   const { data, error } = await supabaseClient.functions.invoke('paystack-withdraw', {
-    body: { amount, bankCode, accountNumber, accountName }
+    body: { 
+      amount, 
+      bankCode, 
+      accountNumber, 
+      accountName,
+      profileId: currentSessionUser.id
+    }
   });
 
   if (error || data?.error) {
-    return alert(`Withdrawal failed: ${error?.message || data?.error}`);
+    // This will now print the exact rejection message from Paystack or Supabase
+    return alert(`Withdrawal failed: ${data?.error || error?.message}`);
   }
 
   currentSessionUser.wallet_balance = data.newBalance;
   updateWalletUI();
-  alert(`Withdrawal request for R${amount.toFixed(2)} is being processed via Paystack.`);
+  alert(`Withdrawal request for R${amount.toFixed(2)} processed successfully via Paystack.`);
 }
 
 function updateWalletUI() {
