@@ -382,14 +382,26 @@
       <!-- User Status Header -->
       <div id="auth-user-status" style="margin-top: 1rem; text-align: center; display: none;">
         <p style="color: var(--success); font-size: 0.9rem;" id="logged-in-user-text"></p>
+
+      <!-- Virtual Wallet Section -->
+        <div style="background: var(--surface); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.9rem; color: #94a3b8;">Wallet Balance:</span>
+            <strong id="wallet-balance-text" style="color: var(--gold); font-size: 1.1rem;">R0.00</strong>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <button class="btn btn-primary" style="flex: 1;" onclick="handleWalletDeposit()">Deposit</button>
+            <button class="btn btn-secondary" style="flex: 1;" onclick="handleWalletWithdraw()">Withdraw</button>
+          </div>
+        </div>
         
         <!-- Notification Preference Toggle -->
-        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 12px;">
+        <!-- <div style="display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 12px;">
           <label for="p-notifications" style="font-size: 0.9rem; color: var(--text); cursor: pointer;">
             🔔 Enable Notifications
           </label>
           <input type="checkbox" id="p-notifications" style="width: 18px; height: 18px; cursor: pointer;" onchange="handleToggleNotifications(this.checked)">
-        </div>
+        </div> -->
         
         <button type="button" class="btn btn-danger" onclick="handleLogOut()" style="width: 100%;">Log Out</button>
       </div>
