@@ -1088,7 +1088,7 @@ async function handleWalletWithdraw() {
   if (!currentSessionUser) return alert("Please log in first.");
 
   // Set your target admin email address here
-  const ADMIN_EMAIL = "your-email@domain.com";
+  const ADMIN_EMAIL = "talyah2408@gmail.com";
 
   // 1. Fetch user's current wallet balance
   const { data: profile, error: profileErr } = await supabaseClient
