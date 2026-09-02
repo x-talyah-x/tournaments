@@ -1021,7 +1021,6 @@ async function handleToggleNotifications(isEnabled) {
 }
 
 // Deposit funds into Virtual Wallet via Paystack
-// Deposit funds into Virtual Wallet via Paystack
 async function handleWalletDeposit() {
   if (!currentSessionUser) return alert("Please log in first.");
   
@@ -1094,28 +1093,33 @@ async function handleWalletWithdraw() {
     .single();
 
   const currentBalance = parseFloat(profile?.wallet_balance || 0);
-  const amountStr = prompt(`Current Balance: R${currentBalance.toFixed(2)}\nEnter amount to withdraw to bank account:`);
+  const amountStr = prompt(`Current Balance: R${currentBalance.toFixed(2)}\nEnter amount to withdraw:`);
   const amount = parseFloat(amountStr);
 
   if (isNaN(amount) || amount <= 0) return alert("Invalid amount.");
   if (amount > currentBalance) return alert("Insufficient wallet funds.");
 
-  const bankAccount = prompt("Enter your Bank Account Number & Bank Name:");
-  if (!bankAccount) return alert("Bank account details required for withdrawal.");
+  // Prompt for structured bank inputs required by Paystack
+  const bankCode = prompt("Enter your Bank Code (e.g., 632005 for ABSA, 250655 for FNB):");
+  const accountNumber = prompt("Enter your Account Number:");
+  const accountName = prompt("Enter Account Holder Name:");
 
-  const newBalance = currentBalance - amount;
+  if (!bankCode || !accountNumber || !accountName) {
+    return alert("All bank details are required for Paystack transfers.");
+  }
 
-  await supabaseClient.from('profiles').update({ wallet_balance: newBalance }).eq('id', currentSessionUser.id);
-  await supabaseClient.from('wallet_transactions').insert([{
-    profile_id: currentSessionUser.id,
-    type: 'withdrawal',
-    amount: amount,
-    reference: `WITHDRAW-BANK: ${bankAccount}`
-  }]);
+  // Call the secure Supabase Edge Function
+  const { data, error } = await supabaseClient.functions.invoke('paystack-withdraw', {
+    body: { amount, bankCode, accountNumber, accountName }
+  });
 
-  currentSessionUser.wallet_balance = newBalance;
+  if (error || data?.error) {
+    return alert(`Withdrawal failed: ${error?.message || data?.error}`);
+  }
+
+  currentSessionUser.wallet_balance = data.newBalance;
   updateWalletUI();
-  alert(`Withdrawal request for R${amount.toFixed(2)} submitted. Funds will deposit into your bank account.`);
+  alert(`Withdrawal request for R${amount.toFixed(2)} is being processed via Paystack.`);
 }
 
 function updateWalletUI() {
