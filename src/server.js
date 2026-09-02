@@ -1083,49 +1083,81 @@ async function handleWalletDeposit() {
   handler.openIframe();
 }
 // Withdraw funds directly to bank account
+// Log withdrawal request for manual Paystack processing
 async function handleWalletWithdraw() {
   if (!currentSessionUser) return alert("Please log in first.");
 
-  const { data: profile } = await supabaseClient
+  // 1. Fetch user's current wallet balance
+  const { data: profile, error: profileErr } = await supabaseClient
     .from('profiles')
     .select('wallet_balance')
     .eq('id', currentSessionUser.id)
     .single();
 
-  const currentBalance = parseFloat(profile?.wallet_balance || 0);
-  const amountStr = prompt(`Current Balance: R${currentBalance.toFixed(2)}\nEnter amount to withdraw:`);
+  if (profileErr || !profile) {
+    return alert("Could not retrieve current balance. Please try again.");
+  }
+
+  const currentBalance = parseFloat(profile.wallet_balance || 0);
+  const amountStr = prompt(`Current Balance: R${currentBalance.toFixed(2)}\nEnter amount to request for withdrawal:`);
   const amount = parseFloat(amountStr);
 
-  if (isNaN(amount) || amount <= 0) return alert("Invalid amount.");
+  if (isNaN(amount) || amount <= 0) return alert("Invalid amount entered.");
   if (amount > currentBalance) return alert("Insufficient wallet funds.");
 
-  const bankCode = prompt("Enter your Bank Code (e.g., 632005 for ABSA, 250655 for FNB):");
-  const accountNumber = prompt("Enter your Account Number:");
-  const accountName = prompt("Enter Account Holder Name:");
+  // 2. Prompt user for banking details
+  const reference = `WITHDRAW-${currentSessionUser.id.substring(0, 5)}-${Date.now()}`;
 
-  if (!bankCode || !accountNumber || !accountName) {
-    return alert("All bank details are required for Paystack transfers.");
+  // 3. Deduct funds from user wallet balance immediately to lock the amount
+  const newBalance = currentBalance - amount;
+
+  const { error: balanceErr } = await supabaseClient
+    .from('profiles')
+    .update({ wallet_balance: newBalance })
+    .eq('id', currentSessionUser.id);
+
+  if (balanceErr) {
+    return alert("Failed to process withdrawal request: " + balanceErr.message);
   }
 
-  // Pass profileId along with bank details
-  const { data, error } = await supabaseClient.functions.invoke('paystack-withdraw', {
-    body: { 
-      amount, 
-      bankCode, 
-      accountNumber, 
-      accountName,
-      profileId: currentSessionUser.id
-    }
-  });
+  // 4. Log the withdrawal request in the database for manual admin action
+  const { error: logErr } = await supabaseClient
+    .from('withdrawal_requests')
+    .insert([{
+      profile_id: currentSessionUser.id,
+      player_name: currentSessionUser.player_name,
+      player_email: currentSessionUser.email,
+      amount: amount,
+      bank_name: bankName,
+      account_number: accountNumber,
+      account_name: accountName,
+      reference: reference,
+      status: 'pending_manual_refund'
+    }]);
 
-  if (error || data?.error) {
-    // This will now print the exact rejection message from Paystack or Supabase
-    return alert(`Withdrawal failed: ${data?.error || error?.message}`);
+  if (logErr) {
+    // Rollback balance update if logging fails
+    await supabaseClient
+      .from('profiles')
+      .update({ wallet_balance: currentBalance })
+      .eq('id', currentSessionUser.id);
+
+    return alert("Error logging withdrawal request: " + logErr.message);
   }
 
-  currentSessionUser.wallet_balance = data.newBalance;
+  // 5. Log transaction entry
+  await supabaseClient.from('wallet_transactions').insert([{
+    profile_id: currentSessionUser.id,
+    type: 'withdrawal_request',
+    amount: amount,
+    reference: reference
+  }]);
+
+  // Update local session state & UI
+  currentSessionUser.wallet_balance = newBalance;
   updateWalletUI();
-  alert(`Withdrawal request for R${amount.toFixed(2)} processed successfully via Paystack.`);
+
+  alert(`Withdrawal request of R${amount.toFixed(2)} submitted successfully!\n\nReference: ${reference}\nAn admin will review and manually process the refund.`);
 }
 
 function updateWalletUI() {
