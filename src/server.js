@@ -211,6 +211,8 @@ async function loadTournaments() {
         id,
         created_at,
         partner_name,
+        payment_method,
+        payment_status,
         profiles (
           id,
           player_name,
@@ -271,6 +273,7 @@ function clearDateFilter() {
   }
 }
 
+// Render Tournaments & Dynamic Auth Controls
 // Render Tournaments & Dynamic Auth Controls
 function renderTournaments() {
   const container = document.getElementById('tournaments-container');
@@ -340,17 +343,17 @@ function renderTournaments() {
         const targetGender = t.target_gender || 'All';
         const genderBadgeText = targetGender === 'All' ? 'Open' : `${targetGender} Only`;
         const isDoubles = t.is_doubles || false;
+        const entryFee = t.entry_fee || 0;
         
         // Format entry fee badge text
-        const entryFeeText = (t.entry_fee !== null && t.entry_fee !== undefined && t.entry_fee > 0) 
-          ? `R${t.entry_fee}` 
-          : 'FREE ENTRY';
+        const entryFeeText = (entryFee > 0) ? `R${entryFee}` : 'FREE ENTRY';
 
         const userRegistration = currentSessionUser 
           ? entries.find(e => e.profiles?.id === currentSessionUser.id)
           : null;
 
         const isGenderEligible = !currentSessionUser || targetGender === 'All' || currentSessionUser.gender === targetGender;
+        const userWalletBalance = parseFloat(currentSessionUser?.wallet_balance || 0);
 
         let actionAreaHtml = '';
         if (!currentSessionUser) {
@@ -378,6 +381,15 @@ function renderTournaments() {
               ${isDoubles ? `
                 <input type="text" id="partner-input-${t.id}" class="input-field" placeholder="Partner's Full Name (e.g. Enrique)" required />
               ` : ''}
+              
+              ${entryFee > 0 ? `
+                <select id="payment-method-${t.id}" class="select-field" required>
+                  <option value="wallet">Pay with Wallet (Balance: R${userWalletBalance.toFixed(2)})</option>
+                  <option value="EFT">Pay Online / EFT (Paystack)</option>
+                  <option value="cash">Pay Cash at Venue</option>
+                </select>
+              ` : ''}
+
               <button type="submit" class="btn btn-primary" style="width: 100%;">
                 ${isDoubles ? 'Join Doubles Tournament' : `Join Tournament as ${escapeHtml(currentSessionUser.player_name)}`}
               </button>
@@ -414,6 +426,7 @@ function renderTournaments() {
                     <tr>
                       <th>#</th>
                       <th>${isDoubles ? 'Pair' : 'Player'}</th>
+                      <th>Payment</th>
                       <th class="admin-col">Actions</th>
                     </tr>
                   </thead>
@@ -426,12 +439,20 @@ function renderTournaments() {
                         ? `${escapeHtml(profile.player_name || 'Unknown')} & ${escapeHtml(entry.partner_name)}`
                         : escapeHtml(profile.player_name || 'Unknown');
 
+                      const method = (entry.payment_method || 'EFT').toUpperCase();
+                      const badgeBg = method === 'CASH' ? '#eab308' : method === 'WALLET' ? '#a855f7' : method === 'FREE' ? '#64748b' : '#22c55e';
+
                       return `
                         <tr style="${isCurrentUser ? 'background: rgba(56, 189, 248, 0.08);' : ''}">
                           <td>${idx + 1}</td>
                           <td>
                             <strong>${displayName}</strong>
                             ${isCurrentUser ? ' <span style="font-size: 0.75rem; color: var(--accent);">(You)</span>' : ''}
+                          </td>
+                          <td>
+                            <span class="badge" style="background: ${badgeBg}; color: #000; font-weight: bold;">
+                              ${method}
+                            </span>
                           </td>
                           <td class="admin-col">
                             <button class="btn btn-danger" onclick="removeParticipant('${entry.id}', '${profile.id}')">✕</button>
@@ -451,7 +472,6 @@ function renderTournaments() {
 
   container.innerHTML = htmlContent;
 }
-
 // 4. Admin Actions
 async function handleCreateTournament(event) {
   event.preventDefault();
@@ -517,51 +537,48 @@ const PAYSTACK_PUBLIC_KEY = "pk_test_17655c4677eb0a914b9bf7557869ac2749f81744"; 
 async function handleSignup(e, tournamentId, isDoubles) {
   e.preventDefault();
 
-  if (!currentSessionUser) {
-    alert("You must be logged in to register for a tournament.");
-    togglePlayerProfilePanel();
-    return;
-  }
-
-  // Find the tournament details
+  if (!currentSessionUser) return alert("Log in to enter.");
   const tournament = tournamentsData.find(t => t.id === tournamentId);
-  if (!tournament) {
-    alert("Tournament not found.");
-    return;
-  }
-
-  let partnerName = null;
-  if (isDoubles) {
-    const inputField = document.getElementById(`partner-input-${tournamentId}`);
-    partnerName = inputField?.value.trim();
-
-    if (!partnerName) {
-      alert("Please enter your partner's name for doubles.");
-      return;
-    }
-  }
-
   const entryFee = tournament.entry_fee || 0;
+  
+  let partnerName = isDoubles ? document.getElementById(`partner-input-${tournamentId}`)?.value.trim() : null;
+  const paymentMethod = entryFee > 0 ? document.getElementById(`payment-method-${tournamentId}`)?.value : 'free';
 
-  // Case A: Free Tournament -> Direct Database Entry
-  if (entryFee <= 0) {
-    await completeRegistration({
-      tournamentId,
-      profileId: currentSessionUser.id,
-      partnerName,
-      paymentStatus: 'free',
-      reference: `FREE-${Date.now()}`
-    });
-    return;
+  if (entryFee <= 0 || paymentMethod === 'free') {
+    return completeRegistration({ tournamentId, profileId: currentSessionUser.id, partnerName, paymentStatus: 'free', paymentMethod: 'free' });
   }
 
-  // Case B: Paid Tournament -> Launch Paystack Gateway
-  payWithPaystack({
-    amount: entryFee,
-    email: currentSessionUser.email,
-    tournamentId: tournamentId,
-    partnerName: partnerName
-  });
+  // 1. Pay via Virtual Wallet
+  if (paymentMethod === 'wallet') {
+    const { data: profile } = await supabaseClient.from('profiles').select('wallet_balance').eq('id', currentSessionUser.id).single();
+    const balance = parseFloat(profile?.wallet_balance || 0);
+
+    if (balance < entryFee) {
+      return alert(`Insufficient wallet balance (R${balance.toFixed(2)}). Please deposit funds or choose Cash/EFT.`);
+    }
+
+    const newBalance = balance - entryFee;
+    await supabaseClient.from('profiles').update({ wallet_balance: newBalance }).eq('id', currentSessionUser.id);
+    await supabaseClient.from('wallet_transactions').insert([{
+      profile_id: currentSessionUser.id,
+      type: 'tournament_entry',
+      amount: entryFee,
+      reference: `ENTRY-${tournamentId}`
+    }]);
+
+    currentSessionUser.wallet_balance = newBalance;
+    updateWalletUI();
+
+    return completeRegistration({ tournamentId, profileId: currentSessionUser.id, partnerName, paymentStatus: 'paid', paymentMethod: 'wallet', amount: entryFee });
+  }
+
+  // 2. Pay via Cash Option
+  if (paymentMethod === 'cash') {
+    return completeRegistration({ tournamentId, profileId: currentSessionUser.id, partnerName, paymentStatus: 'pending_cash', paymentMethod: 'cash', amount: entryFee });
+  }
+
+  // 3. Pay via EFT / Paystack
+  payWithPaystack({ amount: entryFee, email: currentSessionUser.email, tournamentId, partnerName });
 }
 
 // Paystack Gateway Handler
@@ -984,6 +1001,97 @@ async function handleToggleNotifications(isEnabled) {
     alert('Failed to update notification settings: ' + error.message);
     // Revert checkbox state on error
     document.getElementById('p-notifications').checked = !isEnabled;
+  }
+}
+
+// Deposit funds into Virtual Wallet via Paystack
+async function handleWalletDeposit() {
+  if (!currentSessionUser) return alert("Please log in first.");
+  
+  const amountStr = prompt("Enter amount to deposit (ZAR):");
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount) || amount <= 0) return alert("Invalid deposit amount.");
+
+  const reference = `DEP-${currentSessionUser.id.substring(0, 5)}-${Date.now()}`;
+
+  const handler = PaystackPop.setup({
+    key: PAYSTACK_PUBLIC_KEY,
+    email: currentSessionUser.email,
+    amount: Math.round(amount * 100),
+    currency: 'ZAR',
+    ref: reference,
+    callback: async function(response) {
+      // 1. Fetch current balance
+      const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('id', currentSessionUser.id)
+        .single();
+
+      const newBalance = (parseFloat(profile?.wallet_balance || 0) + amount);
+
+      // 2. Update wallet balance in Supabase
+      await supabaseClient
+        .from('profiles')
+        .update({ wallet_balance: newBalance })
+        .eq('id', currentSessionUser.id);
+
+      // 3. Log ledger entry
+      await supabaseClient.from('wallet_transactions').insert([{
+        profile_id: currentSessionUser.id,
+        type: 'deposit',
+        amount: amount,
+        reference: response.reference
+      }]);
+
+      currentSessionUser.wallet_balance = newBalance;
+      updateWalletUI();
+      alert(`Successfully deposited R${amount.toFixed(2)} into your wallet!`);
+    }
+  });
+  handler.openIframe();
+}
+
+// Withdraw funds directly to bank account
+async function handleWalletWithdraw() {
+  if (!currentSessionUser) return alert("Please log in first.");
+
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('wallet_balance')
+    .eq('id', currentSessionUser.id)
+    .single();
+
+  const currentBalance = parseFloat(profile?.wallet_balance || 0);
+  const amountStr = prompt(`Current Balance: R${currentBalance.toFixed(2)}\nEnter amount to withdraw to bank account:`);
+  const amount = parseFloat(amountStr);
+
+  if (isNaN(amount) || amount <= 0) return alert("Invalid amount.");
+  if (amount > currentBalance) return alert("Insufficient wallet funds.");
+
+  const bankAccount = prompt("Enter your Bank Account Number & Bank Name:");
+  if (!bankAccount) return alert("Bank account details required for withdrawal.");
+
+  const newBalance = currentBalance - amount;
+
+  // Deduct from wallet and record withdrawal transaction
+  await supabaseClient.from('profiles').update({ wallet_balance: newBalance }).eq('id', currentSessionUser.id);
+  await supabaseClient.from('wallet_transactions').insert([{
+    profile_id: currentSessionUser.id,
+    type: 'withdrawal',
+    amount: amount,
+    reference: `WITHDRAW-BANK: ${bankAccount}`
+  }]);
+
+  currentSessionUser.wallet_balance = newBalance;
+  updateWalletUI();
+  alert(`Withdrawal request for R${amount.toFixed(2)} submitted. Funds will deposit into your bank account.`);
+}
+
+function updateWalletUI() {
+  const el = document.getElementById('wallet-balance-text');
+  if (el && currentSessionUser) {
+    el.innerText = `R${parseFloat(currentSessionUser.wallet_balance || 0).toFixed(2)}`;
   }
 }
 
