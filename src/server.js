@@ -951,6 +951,7 @@ async function handleToggleNotifications(isEnabled) {
 }
 
 // Deposit funds into Virtual Wallet via Paystack
+// Deposit funds into Virtual Wallet via Paystack
 async function handleWalletDeposit() {
   if (!currentSessionUser) return alert("Please log in first.");
   
@@ -960,41 +961,58 @@ async function handleWalletDeposit() {
 
   const reference = `DEP-${currentSessionUser.id.substring(0, 5)}-${Date.now()}`;
 
+  // Define the success handler function explicitly
+  function handleSuccess(response) {
+    (async () => {
+      try {
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('wallet_balance')
+          .eq('id', currentSessionUser.id)
+          .single();
+
+        const currentBal = parseFloat(profile?.wallet_balance || 0);
+        const newBalance = currentBal + amount;
+
+        await supabaseClient
+          .from('profiles')
+          .update({ wallet_balance: newBalance })
+          .eq('id', currentSessionUser.id);
+
+        await supabaseClient.from('wallet_transactions').insert([{
+          profile_id: currentSessionUser.id,
+          type: 'deposit',
+          amount: amount,
+          reference: response.reference || reference
+        }]);
+
+        currentSessionUser.wallet_balance = newBalance;
+        updateWalletUI();
+        alert(`Successfully deposited R${amount.toFixed(2)} into your wallet!`);
+      } catch (err) {
+        console.error("Error processing deposit:", err);
+        alert("Payment was successful, but failed to update wallet balance. Please contact support.");
+      }
+    })();
+  }
+
+  function handleClose() {
+    alert("Deposit window closed.");
+  }
+
   const handler = PaystackPop.setup({
     key: PAYSTACK_PUBLIC_KEY,
     email: currentSessionUser.email,
     amount: Math.round(amount * 100),
     currency: 'ZAR',
     ref: reference,
-    callback: async function(response) {
-      const { data: profile } = await supabaseClient
-        .from('profiles')
-        .select('wallet_balance')
-        .eq('id', currentSessionUser.id)
-        .single();
-
-      const newBalance = (parseFloat(profile?.wallet_balance || 0) + amount);
-
-      await supabaseClient
-        .from('profiles')
-        .update({ wallet_balance: newBalance })
-        .eq('id', currentSessionUser.id);
-
-      await supabaseClient.from('wallet_transactions').insert([{
-        profile_id: currentSessionUser.id,
-        type: 'deposit',
-        amount: amount,
-        reference: response.reference
-      }]);
-
-      currentSessionUser.wallet_balance = newBalance;
-      updateWalletUI();
-      alert(`Successfully deposited R${amount.toFixed(2)} into your wallet!`);
-    }
+    callback: handleSuccess,  // Explicit function reference
+    onSuccess: handleSuccess, // Fallback for newer Paystack SDK versions
+    onClose: handleClose
   });
+
   handler.openIframe();
 }
-
 // Withdraw funds directly to bank account
 async function handleWalletWithdraw() {
   if (!currentSessionUser) return alert("Please log in first.");
